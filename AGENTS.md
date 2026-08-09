@@ -403,7 +403,7 @@ UI 库 API 参考 design-kit 的 AGENTS.md 与 `docs/DESIGN.md`；组件导出�
 ## 10. 项目状态与后续路线（2026-08-09）
 
 - **已完成**：M0 脚手架 → M1 牌组浏览器 → M2 笔记编辑 → M3 复习（含脚本模式补丁）→ M4 统计（SQLite 增量）→ M5 打包（NSIS 3.1MB，自定义图标）。全部经真实 Anki 数据联调。
-- **git**：仓库已 init、文件已暂存、**无 commit**（用户机器未配 git 身份；代理不得擅自改 git config）。
+- **git**：已提交并推送至公开仓库 **https://github.com/hoangmaituan882-hue/reasonix-anki**（分支 `master`，首个 commit `ac8f98e`）。提交身份为仓库级 `--local` 配置（noreply 邮箱，未动全局）。GitHub 凭据已由 Git Credential Manager 缓存，后续 push 免登录；SSH 22 端口被网络拦截，一律走 HTTPS。
 - **M6（可选）**：sonner 复杂通知 / react-router（若出现深层链接）/ 动效打磨。
 - **M7（可选）**：自写 Anki 配套插件（addon-docs.ankiweb.net），补接口缺口：真 bury（`col.sched.bury_cards`）、全库复习日志（直查 revlog 表）、集合变更推送、due 日期换算（集合创建时间）。启动时用 `apiReflect` 探测，装了增强、没装自动降级。
 

@@ -1,0 +1,16 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@reasonix/ui/styles.css";
+
+/* 让 Tailwind 扫描 @reasonix/ui 构建产物里的类名
+   （node_modules 默认被排除，必须显式 @source） */
+@source "../node_modules/@reasonix/ui/dist";
+
+/* 无边框圆角窗口（tauri.conf: decorations:false + transparent:true）：
+   html/body 置透明，应用背景由 App.tsx 圆角根容器（--rx-r-l）提供，
+   四角透出即圆角效果。不加 @layer —— 无层规则级联优先级高于
+   reasonix styles.css 里 @layer base 的 body 背景。 */
+html,
+body {
+  background: transparent;
+}

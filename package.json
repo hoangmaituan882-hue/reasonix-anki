@@ -1,0 +1,42 @@
+{
+  "name": "reasonix-anki",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@reasonix/ui": "file:vendor/reasonix-ui-0.2.0.tgz",
+    "@tanstack/react-query": "^5.101.4",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-sql": "^2.4.0",
+    "cmdk": "^1.1.1",
+    "dompurify": "^3.4.13",
+    "embla-carousel-react": "^8.6.0",
+    "radix-ui": "^1.6.7",
+    "react": "^19.1.0",
+    "react-day-picker": "^10.0.1",
+    "react-dom": "^19.1.0",
+    "react-resizable-panels": "^4.12.2",
+    "sonner": "^2.0.8",
+    "tw-animate-css": "^1.4.0",
+    "vaul": "^1.1.2",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/cli": "^2",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4"
+  }
+}

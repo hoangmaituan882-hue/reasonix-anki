@@ -2,6 +2,8 @@
   "name": "reasonix-anki",
   "private": true,
   "version": "0.1.0",
+  "description": "Reasonix Anki — 基于 AnkiConnect 的现代 Anki 桌面工作台（Tauri 2 + React 19）",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

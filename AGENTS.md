@@ -2,7 +2,7 @@
 
 > 本文件是 AI 编程代理（QoderWork / Reasonix / Cursor / Copilot 等）在本仓库工作的**唯一权威指南**。
 > 每次新增、修改、重构、测试前，先读本文件并严格遵守。
-> 设计决策全过程见 `../reasonix-anki-tech-plan.md`（v1.2，含评审记录与 M0–M5 实施日志）。
+> 设计决策全过程见 [`docs/tech-plan.md`](docs/tech-plan.md)（v1.2，含评审记录与 M0–M5 实施日志）。
 
 ---
 

@@ -15,3 +15,21 @@ html,
 body {
   background: transparent;
 }
+
+/* 窗口级阴影：根容器不贴窗口边缘（外层留 p-3 = 12px 供阴影扩散），
+   box-shadow 绘制在透明 webview 上并合成到桌面，把应用从周围窗口/
+   桌面里"托"出来。Tauri 无边框窗口 shadow:false，系统不会提供阴影，
+   必须自绘。阴影外边界 = offset + blur + spread，两层均收在 12px 留白
+   内（10px / 6px），避免被窗口边界裁出硬切线。 */
+.ra-window-shadow {
+  box-shadow:
+    0 4px 10px -4px rgba(12, 14, 20, 0.32),
+    0 2px 6px -2px rgba(12, 14, 20, 0.18),
+    0 0 0 1px rgba(20, 22, 28, 0.09);
+}
+.dark .ra-window-shadow {
+  box-shadow:
+    0 4px 10px -4px rgba(0, 0, 0, 0.65),
+    0 2px 6px -2px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}

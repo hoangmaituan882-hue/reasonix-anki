@@ -51,6 +51,8 @@ function App() {
   const settingsButton = (
     <button
       type="button"
+      onMouseDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
         setSettingsOpen(true);

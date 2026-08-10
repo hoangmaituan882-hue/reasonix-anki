@@ -23,6 +23,15 @@ export const DIRECTIONS: { id: Direction; label: string }[] = [
   { id: "amber", label: "琥珀" },
 ];
 
+/** 设置抽屉的骨架布局变体：分栏式 / 标签式 / 卡片式 */
+export type SettingsDesign = "columns" | "tabs" | "cards";
+
+export const SETTINGS_DESIGNS: { id: SettingsDesign; label: string }[] = [
+  { id: "columns", label: "分栏式" },
+  { id: "tabs", label: "标签式" },
+  { id: "cards", label: "卡片式" },
+];
+
 const VIEW_TITLES: Record<View, string> = {
   today: "今日学习",
   browse: "牌组浏览器",
@@ -40,10 +49,16 @@ interface AppState {
   direction: Direction;
   dark: boolean;
   sidebarCollapsed: boolean;
+  /** 窗口四角圆角开关（Win10 无边框透明窗口 + CSS 圆角；关闭即直角观感） */
+  roundedCorners: boolean;
+  /** 设置抽屉使用的骨架布局变体 */
+  settingsDesign: SettingsDesign;
   setView: (view: View) => void;
   setDirection: (direction: Direction) => void;
   toggleDark: () => void;
   toggleSidebar: () => void;
+  setRoundedCorners: (enabled: boolean) => void;
+  setSettingsDesign: (design: SettingsDesign) => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -60,6 +75,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   direction: load<Direction>("ra.direction", "graphite"),
   dark: load<boolean>("ra.dark", true),
   sidebarCollapsed: load<boolean>("ra.sidebarCollapsed", false),
+  roundedCorners: load<boolean>("ra.roundedCorners", true),
+  settingsDesign: load<SettingsDesign>("ra.settingsDesign", "columns"),
 
   setView: (view) => set({ view }),
 
@@ -78,6 +95,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const sidebarCollapsed = !get().sidebarCollapsed;
     localStorage.setItem("ra.sidebarCollapsed", JSON.stringify(sidebarCollapsed));
     set({ sidebarCollapsed });
+  },
+
+  setRoundedCorners: (roundedCorners) => {
+    localStorage.setItem("ra.roundedCorners", JSON.stringify(roundedCorners));
+    set({ roundedCorners });
+  },
+
+  setSettingsDesign: (settingsDesign) => {
+    localStorage.setItem("ra.settingsDesign", JSON.stringify(settingsDesign));
+    set({ settingsDesign });
   },
 }));
 

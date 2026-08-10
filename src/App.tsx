@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Settings as SettingsIcon } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ConnectionIndicator } from "./components/ConnectionIndicator";
 import { DisconnectedScreen } from "./components/DisconnectedScreen";
+import { SettingsSheet } from "./components/SettingsSheet";
 import { Sidebar } from "./components/Sidebar";
 import { ToasterLite } from "./components/ToasterLite";
 import { WindowControls } from "./components/WindowControls";
@@ -19,12 +21,13 @@ import { applyTheme, useAppStore, viewTitle } from "./stores/app";
 import { useStudySessionStore } from "./stores/studySession";
 
 function App() {
-  const { view, direction, dark } = useAppStore();
+  const { view, direction, dark, roundedCorners } = useAppStore();
   const connection = useAnkiConnection();
   const studyPhase = useStudySessionStore((state) => state.phase);
   const studySessionId = useStudySessionStore((state) => state.sessionId);
   const studyDeckName = useStudySessionStore((state) => state.deckName);
   const immersiveStudy = studySessionId !== null || studyPhase === "done";
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // 主题落盘到 <html>：data-direction + .dark（reasonix 主题约定）
   useEffect(() => {
@@ -39,9 +42,32 @@ function App() {
     if (inTauri) void getCurrentWindow().toggleMaximize();
   };
 
+  // 圆角开关：关闭时根容器四角变直角（透明窗口四角不再透出，观感即直角窗口）
+  const rootRounded = roundedCorners
+    ? "rounded-[var(--rx-r-l)]"
+    : "rounded-none";
+
+  // 设置齿轮按钮（header 右侧，可拖拽区 stopPropagation 防误触拖拽）
+  const settingsButton = (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        setSettingsOpen(true);
+      }}
+      aria-label="设置"
+      title="设置"
+      className="rx-press flex h-6 w-6 items-center justify-center rounded-[var(--rx-r-m)] text-[var(--rx-fg-dim)] transition-colors hover:bg-[var(--rx-sidebar-hover)] hover:text-[var(--rx-fg)]"
+    >
+      <SettingsIcon className="h-4 w-4" />
+    </button>
+  );
+
   if (immersiveStudy) {
     return (
-      <div className="flex h-screen flex-col overflow-hidden rounded-[var(--rx-r-l)] bg-[var(--rx-bg)] text-[var(--rx-fg)]">
+      <div
+        className={`flex h-screen flex-col overflow-hidden bg-[var(--rx-bg)] text-[var(--rx-fg)] ${rootRounded}`}
+      >
         <header
           onMouseDown={startDrag}
           onDoubleClick={toggleMaximize}
@@ -51,19 +77,23 @@ function App() {
             {studyDeckName ?? "今日学习"}
           </div>
           <div className="flex items-center gap-2">
+            {settingsButton}
             <ConnectionIndicator />
             {inTauri && <WindowControls />}
           </div>
         </header>
         <main className="min-h-0 flex-1"><StudyView /></main>
         <ToasterLite />
+        <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
     );
   }
 
   return (
-    // 透明窗口 + 圆角根容器：四角透出为圆角效果（半径走设计令牌 --rx-r-l）
-    <div className="flex h-screen overflow-hidden rounded-[var(--rx-r-l)] bg-[var(--rx-bg)] text-[var(--rx-fg)]">
+    // 透明窗口 + 圆角根容器：四角透出为圆角效果（半径走设计令牌 --rx-r-l；开关可关）
+    <div
+      className={`flex h-screen overflow-hidden bg-[var(--rx-bg)] text-[var(--rx-fg)] ${rootRounded}`}
+    >
       <Sidebar />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -74,6 +104,7 @@ function App() {
         >
           <h1 className="text-sm font-semibold">{viewTitle(view)}</h1>
           <div className="flex items-center gap-2">
+            {settingsButton}
             <ConnectionIndicator />
             {inTauri && <WindowControls />}
           </div>
@@ -100,6 +131,7 @@ function App() {
       <ToasterLite />
       <NoteEditorSheet />
       <NewNoteDialog />
+      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

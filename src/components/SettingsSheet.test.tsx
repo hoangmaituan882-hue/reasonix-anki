@@ -45,13 +45,18 @@ describe("SettingsSheet", () => {
   it("renders the title, design picker and rounded-corner switch", () => {
     setup();
     expect(screen.getByRole("heading", { name: "设置" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "分栏式" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "标签式" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "卡片式" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "分栏式", pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "标签式", pressed: false })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "卡片式", pressed: false })).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "圆角窗口" })).toBeChecked();
     // 已接入的外观组控件
     expect(screen.getByRole("combobox", { name: "主题方向" })).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "深色模式" })).toBeChecked();
+    // 说明文字与控件关联（aria-describedby）
+    expect(screen.getByText("无边框透明窗口的 CSS 圆角；关闭后四角变直角")).toHaveAttribute(
+      "id",
+      "settings-rounded-desc",
+    );
   });
 
   it("changes the theme direction via the appearance select", () => {
@@ -75,11 +80,13 @@ describe("SettingsSheet", () => {
   it("switches layout variant and persists the choice", () => {
     setup();
     expect(screen.getByTestId("columns-nav")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "标签式" }));
+    fireEvent.click(screen.getByRole("button", { name: "标签式" }));
     expect(useAppStore.getState().settingsDesign).toBe("tabs");
     expect(localStorage.getItem("ra.settingsDesign")).toBe('"tabs"');
     expect(screen.getByTestId("tabs-nav")).toBeInTheDocument();
     expect(screen.queryByTestId("columns-nav")).not.toBeInTheDocument();
+    // 选中态跟随切换
+    expect(screen.getByRole("button", { name: "标签式", pressed: true })).toBeInTheDocument();
   });
 
   it("toggles rounded corners off and persists it", () => {

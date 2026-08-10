@@ -47,15 +47,15 @@ const PENDING_BADGE = (
   </Badge>
 );
 
-/** 占位骨架行：左侧标签骨架 + 右侧控件骨架 */
+/** 占位骨架行：左侧标签骨架 + 右侧控件骨架（控件骨架对齐真实控件高度 h-8） */
 function SkeletonRow() {
   return (
     <div className="flex items-center justify-between gap-4 py-2">
       <div className="space-y-1.5">
-        <Skeleton className="h-3 w-24" />
-        <Skeleton className="h-2.5 w-40" />
+        <Skeleton className="h-3.5 w-24" />
+        <Skeleton className="h-3 w-40" />
       </div>
-      <Skeleton className="h-7 w-14 rounded-[var(--rx-r-m)]" />
+      <Skeleton className="h-8 w-14 rounded-[var(--rx-r-m)]" />
     </div>
   );
 }
@@ -79,7 +79,7 @@ function SharedSkeletonGroups() {
                 <Label htmlFor="settings-rounded" className="text-sm">
                   圆角窗口
                 </Label>
-                <p className="text-2xs text-[var(--rx-fg-faint)]">
+                <p id="settings-rounded-desc" className="text-xs text-[var(--rx-fg-dim)]">
                   无边框透明窗口的 CSS 圆角；关闭后四角变直角
                 </p>
               </div>
@@ -88,8 +88,10 @@ function SharedSkeletonGroups() {
             <Separator className="bg-[var(--rx-border-soft)]" />
             <div className="flex items-center justify-between gap-4 py-2">
               <div className="space-y-1">
-                <Label className="text-sm">主题方向</Label>
-                <p className="text-2xs text-[var(--rx-fg-faint)]">
+                <Label htmlFor="settings-direction" className="text-sm">
+                  主题方向
+                </Label>
+                <p id="settings-direction-desc" className="text-xs text-[var(--rx-fg-dim)]">
                   界面配色方向，实时生效
                 </p>
               </div>
@@ -101,7 +103,7 @@ function SharedSkeletonGroups() {
                 <Label htmlFor="settings-dark" className="text-sm">
                   深色模式
                 </Label>
-                <p className="text-2xs text-[var(--rx-fg-faint)]">
+                <p id="settings-dark-desc" className="text-xs text-[var(--rx-fg-dim)]">
                   浅色 / 深色界面切换
                 </p>
               </div>
@@ -117,7 +119,7 @@ function SharedSkeletonGroups() {
               <CardTitle className="text-sm">学习</CardTitle>
               {PENDING_BADGE}
             </div>
-            <CardDescription className="text-xs">
+            <CardDescription className="text-xs text-[var(--rx-fg-dim)]">
               默认牌组、自动音频与复习行为
             </CardDescription>
           </CardHeader>
@@ -135,8 +137,25 @@ function SharedSkeletonGroups() {
               <CardTitle className="text-sm">插件与同步</CardTitle>
               {PENDING_BADGE}
             </div>
-            <CardDescription className="text-xs">
+            <CardDescription className="text-xs text-[var(--rx-fg-dim)]">
               配套插件授权与同步行为
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <SkeletonRow />
+            <SkeletonRow />
+          </CardContent>
+        </Card>
+
+        {/* 关于分组（纯骨架）：与导航项对齐 */}
+        <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">关于</CardTitle>
+              {PENDING_BADGE}
+            </div>
+            <CardDescription className="text-xs text-[var(--rx-fg-dim)]">
+              版本与项目信息
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -159,6 +178,7 @@ function RoundedCornerSwitch() {
       checked={roundedCorners}
       onCheckedChange={setRoundedCorners}
       aria-label="圆角窗口"
+      aria-describedby="settings-rounded-desc"
     />
   );
 }
@@ -172,7 +192,12 @@ function DirectionSelect() {
       value={direction}
       onValueChange={(value) => setDirection(value as Direction)}
     >
-      <SelectTrigger className="w-36" aria-label="主题方向">
+      <SelectTrigger
+        id="settings-direction"
+        className="w-36"
+        aria-label="主题方向"
+        aria-describedby="settings-direction-desc"
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -196,11 +221,12 @@ function DarkModeSwitch() {
       checked={dark}
       onCheckedChange={toggleDark}
       aria-label="深色模式"
+      aria-describedby="settings-dark-desc"
     />
   );
 }
 
-/** 变体切换器：分栏 / 标签 / 卡片 */
+/** 变体切换器：分栏 / 标签 / 卡片（分段单选组，非 Tabs） */
 function DesignPicker({
   design,
   onChange,
@@ -209,15 +235,18 @@ function DesignPicker({
   onChange: (design: SettingsDesign) => void;
 }) {
   return (
-    <div className="flex items-center gap-1 rounded-[var(--rx-r-m)] bg-[var(--rx-sidebar)] p-1" role="tablist" aria-label="设置界面布局">
+    <div
+      className="flex items-center gap-1 rounded-[var(--rx-r-m)] bg-[var(--rx-sidebar)] p-1"
+      role="group"
+      aria-label="设置界面布局"
+    >
       {SETTINGS_DESIGNS.map(({ id, label }) => {
         const active = id === design;
         return (
           <button
             key={id}
             type="button"
-            role="tab"
-            aria-selected={active}
+            aria-pressed={active}
             onClick={() => onChange(id)}
             className={cn(
               "rx-press flex flex-1 items-center justify-center gap-1.5 rounded-[calc(var(--rx-r-m)-4px)] px-3 py-1.5 text-xs font-medium transition-colors motion-reduce:transition-none",
@@ -330,7 +359,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
             <Settings className="h-4 w-4 text-[var(--rx-accent)]" aria-hidden />
             <SheetTitle className="text-base">设置</SheetTitle>
           </div>
-          <SheetDescription className="text-xs">
+          <SheetDescription className="text-xs text-[var(--rx-fg-dim)]">
             外观与工作台偏好；未标注的分组为骨架预览，即将接入
           </SheetDescription>
         </SheetHeader>

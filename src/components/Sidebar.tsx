@@ -78,11 +78,11 @@ export function Sidebar() {
           collapsed ? "w-14" : "w-52",
         )}
       >
-        {/* 品牌区：图标位置恒定，文字淡出 */}
+        {/* 品牌区：图标列与导航图标列对齐（展开态统一 20px = px-5），文字淡出 */}
         <div
           className={cn(
             "flex items-center gap-2 pt-4 pb-3",
-            collapsed ? "justify-center px-2" : "px-4",
+            collapsed ? "justify-center px-2" : "px-5",
           )}
         >
           <span
@@ -157,11 +157,11 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* 主题控制：展开态完整控件，收缩态图标按钮 */}
+        {/* 主题控制：展开态内容左边界对齐图标列（px-5）；收缩态图标按钮居中 */}
         <div
           className={cn(
             "space-y-2 border-t border-[var(--rx-border-soft)]",
-            collapsed ? "p-2" : "p-3",
+            collapsed ? "p-2" : "px-5 py-3",
           )}
         >
           {collapsed ? (

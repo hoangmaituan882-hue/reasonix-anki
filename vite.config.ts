@@ -24,6 +24,21 @@ export default defineConfig(async () => ({
         target: "http://127.0.0.1:8765",
         changeOrigin: true,
         rewrite: () => "/",
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyRequest) => {
+            proxyRequest.removeHeader("origin");
+          });
+        },
+      },
+      "/reasonix": {
+        target: "http://127.0.0.1:8766",
+        changeOrigin: true,
+        rewrite: () => "/",
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyRequest) => {
+            proxyRequest.removeHeader("origin");
+          });
+        },
       },
     },
     hmr: host

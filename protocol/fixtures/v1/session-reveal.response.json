@@ -1,0 +1,12 @@
+{
+  "result": {
+    "cardId": 1782031602405,
+    "intervals": {
+      "1": { "seconds": 60, "label": "1 分钟" },
+      "2": { "seconds": 86400, "label": "1 天" },
+      "3": { "seconds": 345600, "label": "4 天" },
+      "4": { "seconds": 777600, "label": "9 天" }
+    }
+  },
+  "error": null
+}

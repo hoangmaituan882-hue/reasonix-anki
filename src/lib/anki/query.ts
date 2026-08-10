@@ -9,6 +9,7 @@ export const PAGE_SIZE = 50;
 
 export const queryKeys = {
   decks: ["decks"] as const,
+  profileDecks: (profileKey: string) => ["decks", profileKey] as const,
   deckConfigs: (names: string[]) => ["deckConfigs", names.join("\u0000")] as const,
   cards: (query: string, page: number) => ["cards", query, page] as const,
   cardsPrefix: ["cards"] as const,
@@ -23,15 +24,16 @@ export interface DeckTreeData {
 }
 
 /** 牌组列表 + 今日额度计数 */
-export function useDeckTree() {
+export function useDeckTree(profileKey?: string | null) {
   return useQuery({
-    queryKey: queryKeys.decks,
+    queryKey: profileKey ? queryKeys.profileDecks(profileKey) : queryKeys.decks,
     queryFn: async (): Promise<DeckTreeData> => {
       const decks = await anki.deckNamesAndIds();
       const names = Object.keys(decks);
       const stats = names.length ? await anki.getDeckStats(names) : {};
       return { decks, stats };
     },
+    enabled: profileKey !== null,
   });
 }
 

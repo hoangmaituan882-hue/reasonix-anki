@@ -1,0 +1,18 @@
+{
+  "result": {
+    "sessionId": "study-session-1",
+    "answeredCards": 12,
+    "durationMs": 720000,
+    "averageMs": 60000,
+    "ratings": {
+      "1": 1,
+      "2": 2,
+      "3": 6,
+      "4": 3
+    },
+    "forgottenRate": 0.08333333333333333,
+    "weakCardIds": [1782031602405, 1782031602406],
+    "tomorrowDue": 8
+  },
+  "error": null
+}

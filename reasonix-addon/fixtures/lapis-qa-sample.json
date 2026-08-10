@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "profileName": "Reasonix QA",
+  "deckName": "Reasonix QA::Lapis",
+  "modelName": "Reasonix QA Lapis",
+  "fields": [
+    "Expression",
+    "ExpressionFurigana",
+    "ExpressionReading",
+    "ExpressionAudio",
+    "MainDefinition",
+    "Glossary",
+    "Sentence",
+    "SentenceFurigana",
+    "SentenceAudio",
+    "Picture",
+    "PitchPosition",
+    "PitchCategories",
+    "Frequency",
+    "SelectionText",
+    "Hint",
+    "MiscInfo",
+    "IsWordAndSentenceCard",
+    "IsClickCard",
+    "IsSentenceCard",
+    "IsAudioCard"
+  ],
+  "notes": [
+    {
+      "guid": "reasonix-qa-ningen",
+      "fields": {
+        "Expression": "人間",
+        "ExpressionFurigana": "<ruby>人間<rt>にんげん</rt></ruby>",
+        "ExpressionReading": "にんげん",
+        "ExpressionAudio": "[sound:reasonix-qa-ningen.mp3]",
+        "MainDefinition": "<ol><li>人类；人。</li></ol>",
+        "Glossary": "<div><b>人間</b>：社会中生活的人。</div>",
+        "Sentence": "人間は社会の中で生きている。",
+        "SentenceFurigana": "<ruby>人間<rt>にんげん</rt></ruby>は<ruby>社会<rt>しゃかい</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で<ruby>生<rt>い</rt></ruby>きている。",
+        "SentenceAudio": "[sound:reasonix-qa-sentence.mp3]",
+        "Picture": "",
+        "PitchPosition": "0",
+        "PitchCategories": "平板",
+        "Frequency": "1200",
+        "SelectionText": "人間",
+        "Hint": "に…",
+        "MiscInfo": "Reasonix QA deterministic fixture",
+        "IsWordAndSentenceCard": "1",
+        "IsClickCard": "1",
+        "IsSentenceCard": "1",
+        "IsAudioCard": "1"
+      },
+      "cards": [
+        { "templateOrd": 0, "templateName": "Vocabulary", "cardKind": "vocabulary" },
+        { "templateOrd": 1, "templateName": "Word and Sentence", "cardKind": "word_sentence" },
+        { "templateOrd": 2, "templateName": "Click", "cardKind": "click" },
+        { "templateOrd": 3, "templateName": "Sentence", "cardKind": "sentence" },
+        { "templateOrd": 4, "templateName": "Audio", "cardKind": "audio" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "result": {
+    "restoredCardId": 1782031602405,
+    "card": {
+      "cardId": 1782031602405,
+      "noteId": 1782031602404,
+      "deckId": 1781523613318,
+      "modelId": 1782031400000,
+      "modelName": "Lapis",
+      "templateOrd": 0,
+      "templateName": "Vocabulary",
+      "queue": 2,
+      "type": 2,
+      "cardKind": "vocabulary",
+      "fields": {"Expression": "word"},
+      "tags": ["ReasonixQA"],
+      "question": "<div>word</div>",
+      "answer": "<div>definition</div>",
+      "media": []
+    },
+    "remaining": {"new": 10, "learning": 2, "review": 35}
+  },
+  "error": null
+}

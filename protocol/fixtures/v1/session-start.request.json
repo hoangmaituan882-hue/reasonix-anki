@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "action": "session.start",
+  "requestId": "b76c912a-953b-4eb2-bfc4-8b9d76fa2012",
+  "token": "qa-session-token",
+  "params": {
+    "deckId": 1781523613318
+  }
+}

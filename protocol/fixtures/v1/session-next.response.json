@@ -1,0 +1,34 @@
+{
+  "result": {
+    "sessionId": "study-session-1",
+    "card": {
+      "cardId": 1782031602405,
+      "noteId": 1782031602404,
+      "deckId": 1781523613318,
+      "modelId": 1782031400000,
+      "modelName": "Lapis",
+      "templateOrd": 0,
+      "templateName": "Vocabulary",
+      "queue": 2,
+      "type": 2,
+      "cardKind": "vocabulary",
+      "fields": {
+        "Expression": "人間",
+        "ExpressionFurigana": "<ruby>人間<rt>にんげん</rt></ruby>",
+        "ExpressionReading": "にんげん",
+        "MainDefinition": "<ol><li>人类；人。</li></ol>",
+        "Sentence": "人間は社会の中で生きている。"
+      },
+      "tags": ["Lapis", "ReasonixQA"],
+      "question": "<div>人間</div>",
+      "answer": "<div>人類；人。</div>",
+      "media": ["ningen.mp3"]
+    },
+    "remaining": {
+      "new": 10,
+      "learning": 2,
+      "review": 35
+    }
+  },
+  "error": null
+}

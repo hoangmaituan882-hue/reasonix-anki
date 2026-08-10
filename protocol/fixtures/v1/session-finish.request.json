@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "action": "session.finish",
+  "requestId": "880756a9-138e-4d58-a0be-50305e136bf1",
+  "token": "qa-session-token",
+  "params": {
+    "sessionId": "study-session-1"
+  }
+}

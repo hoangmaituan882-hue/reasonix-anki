@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "action": "session.reveal",
+  "requestId": "a2938a48-446b-43a3-bf00-763f03a4af1e",
+  "token": "qa-session-token",
+  "params": {
+    "sessionId": "study-session-1",
+    "expectedCardId": 1782031602405
+  }
+}

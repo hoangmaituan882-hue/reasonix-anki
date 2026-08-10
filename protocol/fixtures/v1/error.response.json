@@ -1,0 +1,12 @@
+{
+  "result": null,
+  "error": {
+    "code": "CARD_MISMATCH",
+    "message": "The active card does not match expectedCardId.",
+    "retryable": false,
+    "details": {
+      "expectedCardId": 1782031602405,
+      "activeCardId": 1782031602999
+    }
+  }
+}

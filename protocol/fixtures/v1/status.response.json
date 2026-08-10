@@ -1,0 +1,22 @@
+{
+  "result": {
+    "addonVersion": "0.1.0",
+    "protocolVersion": 1,
+    "ankiVersion": "25.09.2",
+    "profileKey": "sha256:qa-profile",
+    "profileName": "Reasonix QA",
+    "collectionState": "open",
+    "syncState": "idle",
+    "capabilities": [
+      "status",
+      "requestPermission",
+      "session.start",
+      "session.next",
+      "session.reveal",
+      "session.answer",
+      "session.undo",
+      "session.finish"
+    ]
+  },
+  "error": null
+}

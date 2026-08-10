@@ -11,13 +11,20 @@ import { NewNoteDialog } from "./features/editor/NewNoteDialog";
 import { NoteEditorSheet } from "./features/editor/NoteEditorSheet";
 import { ReviewView } from "./features/ReviewView";
 import { StatsView } from "./features/StatsView";
+import { StudyView } from "./features/study/StudyView";
+import { TodayView } from "./features/today/TodayView";
 import { useAnkiConnection } from "./lib/anki/useConnection";
 import { inTauri } from "./lib/anki/transport";
 import { applyTheme, useAppStore, viewTitle } from "./stores/app";
+import { useStudySessionStore } from "./stores/studySession";
 
 function App() {
   const { view, direction, dark } = useAppStore();
   const connection = useAnkiConnection();
+  const studyPhase = useStudySessionStore((state) => state.phase);
+  const studySessionId = useStudySessionStore((state) => state.sessionId);
+  const studyDeckName = useStudySessionStore((state) => state.deckName);
+  const immersiveStudy = studySessionId !== null || studyPhase === "done";
 
   // 主题落盘到 <html>：data-direction + .dark（reasonix 主题约定）
   useEffect(() => {
@@ -31,6 +38,28 @@ function App() {
   const toggleMaximize = () => {
     if (inTauri) void getCurrentWindow().toggleMaximize();
   };
+
+  if (immersiveStudy) {
+    return (
+      <div className="flex h-screen flex-col overflow-hidden rounded-[var(--rx-r-l)] bg-[var(--rx-bg)] text-[var(--rx-fg)]">
+        <header
+          onMouseDown={startDrag}
+          onDoubleClick={toggleMaximize}
+          className="flex h-10 shrink-0 select-none items-center justify-between border-b border-[var(--rx-border-soft)] px-4"
+        >
+          <div className="min-w-0 truncate text-xs font-medium text-[var(--rx-fg-dim)]">
+            {studyDeckName ?? "今日学习"}
+          </div>
+          <div className="flex items-center gap-2">
+            <ConnectionIndicator />
+            {inTauri && <WindowControls />}
+          </div>
+        </header>
+        <main className="min-h-0 flex-1"><StudyView /></main>
+        <ToasterLite />
+      </div>
+    );
+  }
 
   return (
     // 透明窗口 + 圆角根容器：四角透出为圆角效果（半径走设计令牌 --rx-r-l）
@@ -58,6 +87,7 @@ function App() {
             />
           ) : (
             <>
+              {view === "today" && <TodayView />}
               {view === "browse" && <BrowseView />}
               {view === "editor" && <EditorView />}
               {view === "review" && <ReviewView />}

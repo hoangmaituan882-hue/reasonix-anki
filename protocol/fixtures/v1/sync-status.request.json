@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "action": "sync.status",
+  "requestId": "f6b5db80-58f7-4dbb-8d9b-6dcf0adf0d9c",
+  "token": "qa-session-token",
+  "params": {}
+}

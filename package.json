@@ -8,6 +8,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "vitest run",
+    "test:addon": "python -m unittest discover -s reasonix-addon/tests -t reasonix-addon -v",
+    "test:watch": "vitest",
+    "qa:preflight": "python reasonix-addon/qa_preflight.py",
+    "qa:seed": "python reasonix-addon/qa_seed.py",
+    "addon:package": "python reasonix-addon/package_addon.py --output dist/reasonix-anki-addon.ankiaddon",
     "preview": "vite preview",
     "tauri": "tauri"
   },
@@ -20,11 +26,13 @@
     "cmdk": "^1.1.1",
     "dompurify": "^3.4.13",
     "embla-carousel-react": "^8.6.0",
+    "lucide-react": "^1.31.0",
     "radix-ui": "^1.6.7",
     "react": "^19.1.0",
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.1.0",
     "react-resizable-panels": "^4.12.2",
+    "shadcn": "^4.16.2",
     "sonner": "^2.0.8",
     "tw-animate-css": "^1.4.0",
     "vaul": "^1.1.2",
@@ -34,11 +42,17 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.3",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "jsdom": "^29.0.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "vite": "^7.0.4",
+    "vitest": "^4.1.10"
   }
 }

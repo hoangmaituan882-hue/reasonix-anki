@@ -10,6 +10,7 @@ pub fn run() {
         .manage(commands::MediaDir::default())
         .invoke_handler(tauri::generate_handler![
             commands::anki_request,
+            commands::reasonix_request,
             commands::read_media_file
         ])
         .run(tauri::generate_context!())

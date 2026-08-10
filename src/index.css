@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
 @import "@reasonix/ui/styles.css";
 
 /* 让 Tailwind 扫描 @reasonix/ui 构建产物里的类名

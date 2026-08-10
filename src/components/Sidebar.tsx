@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  CalendarDays,
   GraduationCap,
   Library,
   Moon,
@@ -26,6 +27,7 @@ import {
 import { DIRECTIONS, useAppStore, type Direction, type View } from "../stores/app";
 
 const NAV_ITEMS: { id: View; label: string; icon: typeof Library }[] = [
+  { id: "today", label: "今日学习", icon: CalendarDays },
   { id: "browse", label: "牌组浏览", icon: Library },
   { id: "editor", label: "笔记编辑", icon: SquarePen },
   { id: "review", label: "复习", icon: GraduationCap },
@@ -85,7 +87,7 @@ export function Sidebar() {
             aria-hidden={collapsed}
           >
             <div className="text-sm font-semibold">Reasonix Anki</div>
-            <div className="text-2xs text-[var(--rx-fg-faint)]">学习工作台 · v0.1</div>
+            <div className="text-2xs text-[var(--rx-fg-faint)]">日语学习工作台 · v0.2</div>
           </div>
         </div>
 

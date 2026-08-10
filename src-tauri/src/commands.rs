@@ -9,6 +9,7 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 const ANKI_URL: &str = "http://127.0.0.1:8765";
+const REASONIX_URL: &str = "http://127.0.0.1:8766";
 const TIMEOUT: Duration = Duration::from_secs(15);
 
 static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
@@ -45,6 +46,23 @@ pub async fn anki_request(action: String, params: Value) -> Result<Value, String
         Some(Value::String(msg)) if !msg.is_empty() => Err(msg.clone()),
         _ => Ok(json.get("result").cloned().unwrap_or(Value::Null)),
     }
+}
+
+/// Reasonix 配套插件代理：只转发完整协议 envelope，不在 Rust 层解释业务错误。
+#[tauri::command]
+pub async fn reasonix_request(request: Value) -> Result<Value, String> {
+    let response = client()
+        .post(REASONIX_URL)
+        .json(&request)
+        .timeout(TIMEOUT)
+        .send()
+        .await
+        .map_err(|e| format!("无法连接 Reasonix Anki 插件（127.0.0.1:8766）：{e}"))?;
+
+    response
+        .json()
+        .await
+        .map_err(|e| format!("Reasonix Anki 插件响应解析失败：{e}"))
 }
 
 /* ---------------- 媒体直读（技术方案 §6.3 首选链路） ---------------- */
@@ -110,4 +128,16 @@ pub async fn read_media_file(
     let path = dir.join(&filename);
     let bytes = std::fs::read(&path).map_err(|e| format!("读取媒体失败：{e}"))?;
     Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ANKI_URL, REASONIX_URL};
+
+    #[test]
+    fn addon_proxy_uses_a_separate_loopback_port() {
+        assert_eq!(ANKI_URL, "http://127.0.0.1:8765");
+        assert_eq!(REASONIX_URL, "http://127.0.0.1:8766");
+        assert_ne!(ANKI_URL, REASONIX_URL);
+    }
 }

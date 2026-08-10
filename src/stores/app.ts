@@ -4,7 +4,7 @@
  */
 import { create } from "zustand";
 
-export type View = "browse" | "editor" | "review" | "stats";
+export type View = "today" | "browse" | "editor" | "review" | "stats";
 
 export type Direction =
   | "graphite"
@@ -24,6 +24,7 @@ export const DIRECTIONS: { id: Direction; label: string }[] = [
 ];
 
 const VIEW_TITLES: Record<View, string> = {
+  today: "今日学习",
   browse: "牌组浏览器",
   editor: "笔记编辑",
   review: "复习",
@@ -55,7 +56,7 @@ function load<T>(key: string, fallback: T): T {
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
-  view: "browse",
+  view: "today",
   direction: load<Direction>("ra.direction", "graphite"),
   dark: load<boolean>("ra.dark", true),
   sidebarCollapsed: load<boolean>("ra.sidebarCollapsed", false),

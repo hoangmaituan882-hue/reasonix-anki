@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "action": "session.undo",
+  "requestId": "0df8097b-ab75-4e44-b1a4-8e2edc532686",
+  "token": "qa-session-token",
+  "params": {
+    "sessionId": "study-session-1"
+  }
+}

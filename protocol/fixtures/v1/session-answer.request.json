@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "action": "session.answer",
+  "requestId": "881b99e4-ef1e-4b1b-a267-1fc59af6a59c",
+  "token": "qa-session-token",
+  "params": {
+    "sessionId": "study-session-1",
+    "expectedCardId": 1782031602405,
+    "ease": 3
+  }
+}

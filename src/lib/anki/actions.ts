@@ -17,8 +17,9 @@ import {
 import { ankiCall } from "./transport";
 
 export interface PermissionInfo {
-  permission: string;
-  requireKey?: boolean;
+  permission: "granted" | "denied";
+  requireApiKey?: boolean;
+  version?: number;
 }
 
 export const anki = {

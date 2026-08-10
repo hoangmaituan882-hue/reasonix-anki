@@ -2,7 +2,7 @@
 
 > 本文件是 AI 编程代理（QoderWork / Reasonix / Cursor / Copilot 等）在本仓库工作的**唯一权威指南**。
 > 每次新增、修改、重构、测试前，先读本文件并严格遵守。
-> 设计决策全过程见 [`docs/tech-plan.md`](docs/tech-plan.md)（v1.2，含评审记录与 M0–M5 实施日志）。
+> 已批准的下一阶段设计与实施顺序见 [`docs/tech-plan.md`](docs/tech-plan.md)（v2，2026-08-10）。该文件描述目标态；本文件同时记录当前代码状态与长期硬边界。
 
 ---
 
@@ -14,14 +14,18 @@
 
 Tauri 2（Rust 薄层）· React 19 · TypeScript strict · Vite 7 · Tailwind CSS v4 · TanStack Query v5 · Zustand v5 · SQLite（tauri-plugin-sql）· `@reasonix/ui`（vendor/ 本地 tgz，38 组件 + 6 主题方向）。
 
-### 0.2 四大功能视图（侧栏切换，无路由库）
+### 0.2 当前 v0.2 的五大主视图与沉浸式学习会话（无路由库）
+
+> 以下是**当前已实现状态**。v2 的 P0–P5 已落地；旧复习视图继续作为兼容入口保留，但正式日语背词入口只走配套插件和 Anki 原生调度。
 
 | 视图 | 能力 | 关键实现 |
 |---|---|---|
-| **牌组浏览**（默认） | 三栏：牌组树（"新卡 已学/上限"口径 Badge）→ 卡片列表（Anki 搜索语法 + 分页）→ 笔记预览；行操作：暂停/恢复、改期（确认弹窗）、编辑、删除（确认弹窗） | ResizablePanelGroup v4（`orientation`）；getDeckStats + getDeckConfig 双口径 |
+| **今日学习**（默认） | 当前 Profile 牌组与今日新卡/学习中/复习计数；先选牌组，再以唯一 `deckId` 启动正式学习；插件未就绪时禁用入口且不降级 | TodayView + profileKey 隔离 Query + Reasonix 插件能力探测 |
+| **牌组浏览** | 三栏：牌组树（"新卡 已学/上限"口径 Badge）→ 卡片列表（Anki 搜索语法 + 分页）→ 笔记预览；行操作：暂停/恢复、改期（确认弹窗）、编辑、删除（确认弹窗） | ResizablePanelGroup v4（`orientation`）；getDeckStats + getDeckConfig 双口径 |
 | **笔记编辑** | 新建笔记（选牌组 + 模板 → modelFieldNames 动态表单 → addNote）；按 id 编辑（Sheet 面板，字段源码/预览双态，updateNote 一次提交）；图片粘贴上传（storeMediaFile） | 编辑面板全局单实例挂载在 App，由 editor store 驱动 |
-| **复习** | 自建复习流：选牌组 → 到期队列（is:due，乱序，上限 300）→ 问题面/答案面（沙箱渲染 + 媒体管线）→ 键盘评分（Space/1-4/B）→ 完成页统计；"今天不看"= 会话内 bury（零调度副作用）；**脚本模式**开关渲染 JS 驱动的重模板 | Zustand 状态机；CardRenderer（DOMPurify + iframe sandbox + 媒体解析） |
+| **复习（兼容）** | 旧自建复习流：选牌组 → 到期队列（is:due，乱序，上限 300）→ 模板正反面 → 四档评分；不作为 v2 正式背词调度入口 | 旧 review Zustand 状态机；CardRenderer（DOMPurify + iframe sandbox + 媒体解析） |
 | **统计概览** | 汇总卡（今日已复习/总卡片/今日到期/新卡剩余）；热力图（全局接口 or 单牌组 SQLite 聚合，26 周）；牌组汇总表；增量同步/重建控制 | SQLite 三表 + cardReviews(startID) 水位线增量 |
+| **沉浸式日语学习会话** | Anki scheduler 队首 → Lapis/自制字段映射 → 原生正背面 → 始终显示四档原生间隔 → 自动音频 → 即时撤销 → 简洁完成报告 | `studySession.ts` 状态机 + `StudyView` + `lapisAdapter`；插件 session v1 是唯一调度真源 |
 
 ### 0.3 仓库地图
 
@@ -40,7 +44,10 @@ reasonix-anki/
 │   │   ├── StatsView.tsx         # M4 汇总卡 + 热力图 + 同步控制
 │   │   ├── browse/               # DeckTree / CardTable / NotePreview / RowActions / browseUtil
 │   │   ├── editor/               # FieldEditor / NewNoteDialog / NoteEditorSheet
-│   │   └── review/               # CardRenderer（渲染核心）/ ReviewSession
+│   │   ├── review/               # 兼容 CardRenderer / ReviewSession
+│   │   ├── today/                # v2 今日学习首页与牌组启动入口
+│   │   ├── study/                # v2 沉浸式正背面、四档、音频、撤销、报告
+│   │   └── vocabulary/           # Lapis 识别、字段重组、一次性映射向导
 │   ├── lib/
 │   │   ├── anki/
 │   │   │   ├── transport.ts      # ★ 双通道：Tauri invoke / 浏览器 fetch /anki
@@ -48,9 +55,13 @@ reasonix-anki/
 │   │   │   ├── schemas.ts        # zod schemas（字段名已按官方 README 逐条核对）
 │   │   │   ├── query.ts          # queryKeys + useQuery 工厂（6 个 hooks）
 │   │   │   └── useConnection.ts  # 连接状态机（3s 轮询）
+│   │   ├── reasonix-addon/       # v1 schema/client/transport（固定代理到 8766）
 │   │   ├── db/stats.ts           # SQLite 三表 + cardReviews 增量同步
+│   │   ├── db/mappings.ts        # profileKey/modelId 命名空间字段映射
 │   │   └── media.ts              # 媒体解析：read_media_file → blob，LRU 缓存
-│   └── stores/                   # zustand：app（视图/主题）/ editor / review（会话状态机）
+│   └── stores/                   # app/editor/兼容 review/v2 studySession
+├── reasonix-addon/               # Anki 25.09.2 配套插件、测试、打包脚本
+├── protocol/fixtures/v1/         # TS/Python 共用协议契约样本
 ├── src-tauri/
 │   ├── src/commands.rs           # anki_request + read_media_file（刻意做薄）
 │   ├── src/lib.rs                # 插件/state 注册（opener + sql + MediaDir）
@@ -67,11 +78,18 @@ reasonix-anki/
 
 1. **Rust 层保持薄**：只做 HTTP 转发、超时、`{result, error}` 解包、媒体直读。一切业务逻辑在 TS 层（可测、可热更新）。新增 Rust command 前先问：能不能放 TS？
 2. **AnkiConnect 唯一入口是 `lib/anki/actions.ts`**：禁止在组件里直接 `invoke("anki_request")` 或 `fetch("/anki")`。新 action 先在 actions.ts 加类型化函数。
-3. **状态分层**：查询型数据（牌组/卡片/笔记/模型）→ TanStack Query；命令式会话状态（复习流程）→ Zustand `stores/review.ts`。复习流进 Query 是明确拒绝的反模式（评审定稿）。
+3. **状态分层**：查询型数据（牌组/卡片/笔记/模型）→ TanStack Query；命令式会话状态 → Zustand。当前兼容复习流在 `stores/review.ts`，v2 精确学习流进入独立 `stores/studySession.ts`；会话状态不得塞进 Query。
 4. **卡片 HTML 是不可信输入**：默认安全模式 = DOMPurify 消毒 + iframe `sandbox="allow-same-origin"`（无脚本）。脚本模式仅在用户显式开启时使用（`allow-scripts allow-same-origin`，等同 Anki 原生信任级别）——不要默认开。
-5. **调度数据敬畏原则**：`setDueDate` 只允许在带确认弹窗的明确操作后调用（官方文档明示它把 new 卡转成 review 卡）；复习流的"今天不看"必须走会话内 bury（`buriedToday`），零 Anki 副作用。
+5. **调度数据敬畏原则**：`setDueDate` 只允许在带确认弹窗的明确操作后调用（官方文档明示它把 new 卡转成 review 卡）。当前 M3 的 `buriedToday` 仅是兼容体验，不能进入 v2 正式背词调度。
 6. **样式纪律**（继承 reasonix-design-kit）：无硬编码色值/圆角/时长，一律 `var(--rx-*)` 或 tailwind 语义令牌；动效时长取 `--rx-dur-*`，缓动取 `--rx-ease*`。
 7. **视图切换不用路由库**：`stores/app.ts` 的 `currentView` + 条件渲染（评审定稿的 YAGNI 决策），出现深层链接需求再评估 react-router。
+8. **v2 正式背词只认 Anki scheduler**：配套插件是精确学习会话的必要组件；`session.start` 只接收 deckId，禁止“只新卡/只旧卡”过滤，也禁止用 `findCards + shuffle`、本地截断或自算间隔模拟原生队列。Reasonix 只呈现，不筛选、不重排、不覆盖每日限额。
+9. **现有牌组是数据源**：不得为了背词模块迁移、复制、重建用户的 Lapis/自制笔记与卡片；标准 Lapis 自动识别，非标准模型走一次性字段映射。
+10. **日语词条使用原生字段 UI**：保留原卡型的测试语义，但以字段重组沉浸式界面；所有词典/例句 HTML 仍视为不可信输入并消毒，主流程不执行卡片脚本。
+11. **运行与同步边界已拍板**：用户手动启动 Anki；连接成功和正式学习会话结束后自动同步，学习过程中不得自动同步。
+12. **调度开发只能写入独立 QA Profile**：自动评分、撤销、队列一致性测试不得触碰用户真实牌组；P0 测试安全网和 P1 调度原型通过前，不开始大规模 v2 UI 实现。
+13. **Profile 是所有本地状态的命名空间**：Query key、媒体目录缓存、SQLite stats/mapping 和 study session 都必须包含插件返回的 profileKey；外部切换 Profile 时立即暂停并失效，禁止仅靠 deckId/cardId 区分 collection。
+14. **弹层与图标遵循上游语义**：Dialog/Sheet/Popover/Dropdown/Tooltip 使用 `@reasonix/ui` 的 Radix 实现并保留 Portal/焦点/Esc/碰撞行为；图标使用 Lucide 按需导入，纯图标按钮必须有可访问名称。
 
 ---
 
@@ -82,19 +100,17 @@ reasonix-anki/
 ```
 ┌─ 视图层 features/* ─────────────────────────────────────────────┐
 │  查询型：useDeckTree / useCardSearch / …（TanStack Query 缓存）   │
-│  会话型：useReviewStore / useEditorStore / useAppStore（Zustand） │
-└──────────────┬───────────────────────────────────────────────────┘
-               ▼
-┌─ 服务层 lib/anki/actions.ts（anki.* 24 个类型化函数）────────────┐
-│  zod 解析入口；写操作成功后按 §5.1 失效缓存                        │
-└──────────────┬───────────────────────────────────────────────────┘
-               ▼
-┌─ 传输层 lib/anki/transport.ts（ankiCall，双通道）────────────────┐
-│  Tauri：invoke("anki_request") → Rust reqwest → 127.0.0.1:8765  │
-│  浏览器：fetch("/anki") → Vite dev proxy → 127.0.0.1:8765        │
-└──────────────┬───────────────────────────────────────────────────┘
-               ▼
-        Anki + AnkiConnect 插件（本地唯一数据源）
+│  会话型：useStudySessionStore / useReviewStore / editor（Zustand）│
+└──────────────┬───────────────────────────┬───────────────────────┘
+               ▼                           ▼
+┌─ lib/anki/actions.ts ──────┐  ┌─ lib/reasonix-addon/client.ts ──┐
+│ 通用 CRUD / 查询 / 统计 / 媒体 │  │ 原生 scheduler / 间隔 / 撤销 / 锁 │
+└──────────────┬─────────────┘  └──────────────┬─────────────────┘
+               ▼                               ▼
+ AnkiConnect :8765（v6）          Reasonix 配套插件 :8766（协议 v1）
+               └──────────────┬────────────────┘
+                              ▼
+             Anki collection + scheduler（唯一业务真源）
 ```
 
 媒体旁路：CardRenderer → `lib/media.ts resolveMediaUrl` → Tauri `read_media_file`（Rust `std::fs` 直读媒体目录）→ base64 → Blob URL（LRU 120）；失败/浏览器模式落 `anki.retrieveMediaFile`。
@@ -104,6 +120,7 @@ reasonix-anki/
 | Command | 入参 | 返回 | 说明 |
 |---|---|---|---|
 | `anki_request` | `{ action: string, params: Value }` | `Result<Value, String>` | POST 8765，15s 超时；body 自动带 `version: 6`；响应 `error` 非 null → Err(错误信息)，否则返回 `result`。apiKey 注入点（未来） |
+| `reasonix_request` | `{ request: Value }` | `Result<Value, String>` | 原样 POST 8766，15s 超时；保留插件 `{result,error}` 包络供 TS 转换为带 code 的结构化错误；目标地址固定为 loopback，不接受前端传 URL |
 | `read_media_file` | `{ filename: string }` | `Result<String(base64), String>` | 媒体目录路径首次调用时经 `getMediaDirPath` 获取并缓存（`MediaDir` state）；文件名校验：拒绝空名与 `.. / \ :`（防目录穿越）；`std::fs` 直读。**注意**：锁守卫不可跨 await（future 非 Send） |
 
 权限（capabilities/default.json）：`core:default` + `opener:default` + `sql:default`——最小化，勿随意扩。
@@ -115,7 +132,7 @@ reasonix-anki/
 | 分类 | Action | 参数 → 返回 | 调用方 |
 |---|---|---|---|
 | 连接 | `version` | — → number | useConnection |
-| 连接 | `requestPermission` | — → `{permission, requireKey?}`（幂等不弹窗） | useConnection |
+| 连接 | `requestPermission` | — → `{permission, requireApiKey?, version?}`（不受信任 Origin 可能在 Anki 弹授权窗） | useConnection |
 | 连接 | `sync` | — → null | 预留（工具栏同步按钮未接线） |
 | 牌组 | `deckNamesAndIds` | — → **Record<牌组名, deck_id>** | useDeckTree |
 | 牌组 | `getDeckStats` | `{decks[]}` → Record<deck_id, DeckStats>（额度口径！） | useDeckTree |
@@ -139,7 +156,7 @@ reasonix-anki/
 | 媒体 | `retrieveMediaFile` | `{filename}` → base64 \| null | lib/media 兜底 |
 | 媒体 | `getMediaDirPath` | — → 媒体目录绝对路径 | Rust read_media_file 内部 |
 
-**B. 可用未用（扩展功能/M7 插件前查这里）**
+**B. 可用未用（通用功能扩展前查这里；不要与 v2 配套插件协议混为一谈）**
 
 | Action | 用途 |
 |---|---|
@@ -151,15 +168,15 @@ reasonix-anki/
 | `exportPackage` / `importPackage` | .apkg 导入导出 |
 | `getProfiles` / `getActiveProfile` / `loadProfile` | 多 profile 支持 |
 | `multi` | 批量执行减往返 |
-| `apiReflect` | 运行时探测可用 action（M7 插件探测机制依赖它） |
+| `apiReflect` | 运行时探测 AnkiConnect 自身可用 action；v2 配套插件使用独立的版本化能力协商 |
 | `getEaseFactors` / `setEaseFactors` / `relearnCards` / `removeEmptyNotes` | 细粒度调度 |
-| `gui*` 系列（guiBrowse/guiDeckOverview/guiAnswerCard/guiUndo/…） | 操作 Anki 原生界面——自建客户端刻意不用（guiUndo 等只作用于原生窗口） |
+| `gui*` 系列（guiBrowse/guiDeckOverview/guiAnswerCard/guiUndo/…） | 操作 Anki GUI。`guiUndo` 当前实现调用全局 `mw.undo()`，但只返回是否受理，不提供 expectedCardId、完成确认或恢复载荷，不能替代 v2 会话撤销协议 |
 
 ### 2.4 服务层：`anki.*` 完整签名（lib/anki/actions.ts）
 
 ```ts
 anki.version(): Promise<number>
-anki.requestPermission(): Promise<PermissionInfo>        // {permission, requireKey?}
+anki.requestPermission(): Promise<PermissionInfo>        // {permission, requireApiKey?, version?}
 anki.sync(): Promise<null>
 anki.deckNamesAndIds(): Promise<DeckMap>                 // Record<牌组名, deck_id>（zod 解析）
 anki.getDeckStats(decks: string[]): Promise<Record<string, DeckStats>>
@@ -219,7 +236,7 @@ type RevlogRow = [reviewTime, cardID, usn, buttonPressed, newInterval,
 **stores/app.ts**（应用级）
 
 ```ts
-type View = "browse" | "editor" | "review" | "stats";
+type View = "today" | "browse" | "editor" | "review" | "stats";
 type Direction = "graphite" | "aurora" | "slate" | "carbon" | "nocturne" | "amber";
 state: { view, direction, dark, sidebarCollapsed }   // 持久化 ra.direction / ra.dark / ra.sidebarCollapsed
 actions: setView / setDirection / toggleDark / toggleSidebar
@@ -234,7 +251,18 @@ state: { editingNoteId: number|null, newNoteOpen: boolean, newNoteDefaultDeck: s
 actions: openEditor(noteId) / closeEditor() / openNewNote(defaultDeck?) / closeNewNote()
 ```
 
-**stores/review.ts**（复习会话状态机）
+**stores/studySession.ts**（v2 正式日语学习状态机）
+
+```ts
+type StudyPhase = "idle" | "starting" | "front" | "revealing" | "back" |
+                  "answering" | "undoing" | "mapping" | "done" | "error";
+state: { deckId, deckName, sessionId, profileKey, token, card, word,
+         remaining, intervals, answeredCards, canUndo, error }
+actions: start(deckId, deckName) / reveal() / answer(ease) / undo() /
+         finish() / applyMapping(mapping) / reset()
+```
+
+**stores/review.ts**（当前 v0.1.0 兼容复习状态机；v2 正式背词流不得复用其本地队列）
 
 ```ts
 type ReviewPhase = "idle" | "question" | "answer" | "done";
@@ -400,12 +428,14 @@ UI 库 API 参考 design-kit 的 AGENTS.md 与 `docs/DESIGN.md`；组件导出�
 
 ---
 
-## 10. 项目状态与后续路线（2026-08-09）
+## 10. 项目状态与后续路线（2026-08-10）
 
-- **已完成**：M0 脚手架 → M1 牌组浏览器 → M2 笔记编辑 → M3 复习（含脚本模式补丁）→ M4 统计（SQLite 增量）→ M5 打包（NSIS 3.1MB，自定义图标）。全部经真实 Anki 数据联调。
+- **当前代码（v0.2 开发态）**：旧 M0–M5 功能保留；v2 P0–P5 已落地，包括跨语言协议 fixtures、Anki 25.09.2 原生调度会话、Lapis 自动识别/自制模型一次性映射、今日学习默认首页、沉浸式正背面、四档原生间隔、自动音频、即时撤销与简洁完成报告。旧 `findCards + shuffle + answerCards` 仅留在“复习”兼容视图，不再是正式日语背词入口。
+- **配套插件授权（已落地）**：默认首次询问并永久记住，授权作用于整个 Anki 安装并跨 Profile/重启共享；同一进程并发请求只弹一次；撤销会轮换 token。`工具 → Reasonix 设置…` 与附加组件管理器“配置”打开同一中文原生 Qt 页面，可切换授权策略、撤销授权并复制诊断信息。
 - **git**：已提交并推送至公开仓库 **https://github.com/hoangmaituan882-hue/reasonix-anki**（分支 `master`，首个 commit `ac8f98e`）。提交身份为仓库级 `--local` 配置（noreply 邮箱，未动全局）。GitHub 凭据已由 Git Credential Manager 缓存，后续 push 免登录；SSH 22 端口被网络拦截，一律走 HTTPS。
-- **M6（可选）**：sonner 复杂通知 / react-router（若出现深层链接）/ 动效打磨。
-- **M7（可选）**：自写 Anki 配套插件（addon-docs.ankiweb.net），补接口缺口：真 bury（`col.sched.bury_cards`）、全库复习日志（直查 revlog 表）、集合变更推送、due 日期换算（集合创建时间）。启动时用 `apiReflect` 探测，装了增强、没装自动降级。
+- **已批准的 v2 方向**：日语专用日常背词工作台；用户手动启动 Anki；今日首页选择牌组后直接开始 Anki 原生调度会话，不提供只新卡/只旧卡模式；标准 Lapis 自动识别、自制模型一次性字段映射；原生字段 UI 保留原卡型语义；四档间隔、自动音频、即时撤销、自动同步与简洁报告。
+- **配套插件从“可选 M7”升级为 v2 必要组件**：AnkiConnect 继续负责通用 CRUD；插件负责 scheduler 队列、预计间隔、撤销、准确计数和同步协调。未安装或不兼容时必须禁用精确学习入口，不得静默退回随机队列。
+- **当前阶段**：P6 的连接成功/会话结束自动同步、同步锁、断线恢复与报告已落地；P7 稳定性增强正在进行，当前已包含插件 HTTP 启动回滚、健康状态监测、同步 pending 超时、有限退避重试和迟到权限回调隔离。跨插件重启的会话持久化、Profile 切换深测、长内容性能与 P8 发布验收仍未完成。详细验收见 `docs/tech-plan.md`。
 
 ---
 

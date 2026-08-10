@@ -49,6 +49,27 @@ describe("SettingsSheet", () => {
     expect(screen.getByRole("tab", { name: "标签式" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "卡片式" })).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "圆角窗口" })).toBeChecked();
+    // 已接入的外观组控件
+    expect(screen.getByRole("combobox", { name: "主题方向" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "深色模式" })).toBeChecked();
+  });
+
+  it("changes the theme direction via the appearance select", () => {
+    setup();
+    // 模拟打开 Select 并选择"琥珀"
+    fireEvent.click(screen.getByRole("combobox", { name: "主题方向" }));
+    const option = screen.getByRole("option", { name: "琥珀" });
+    fireEvent.click(option);
+    expect(useAppStore.getState().direction).toBe("amber");
+    expect(localStorage.getItem("ra.direction")).toBe('"amber"');
+  });
+
+  it("toggles dark mode via the appearance switch", () => {
+    setup();
+    expect(useAppStore.getState().dark).toBe(true);
+    fireEvent.click(screen.getByRole("switch", { name: "深色模式" }));
+    expect(useAppStore.getState().dark).toBe(false);
+    expect(localStorage.getItem("ra.dark")).toBe("false");
   });
 
   it("switches layout variant and persists the choice", () => {

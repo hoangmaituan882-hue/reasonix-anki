@@ -7,6 +7,11 @@ import {
   CardHeader,
   CardTitle,
   Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Separator,
   Sheet,
   SheetContent,
@@ -20,8 +25,10 @@ import {
 } from "@reasonix/ui";
 import { Check, Settings } from "lucide-react";
 import {
+  DIRECTIONS,
   SETTINGS_DESIGNS,
   useAppStore,
+  type Direction,
   type SettingsDesign,
 } from "../stores/app";
 
@@ -58,13 +65,10 @@ function SharedSkeletonGroups() {
   return (
     <>
       <div className="space-y-4">
-        {/* 外观分组：圆角开关为唯一真功能，其余骨架 */}
+        {/* 外观分组：圆角 / 主题方向 / 深色模式已接入 */}
         <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">外观</CardTitle>
-              {PENDING_BADGE}
-            </div>
+            <CardTitle className="text-sm">外观</CardTitle>
             <CardDescription className="text-xs">
               窗口外观与主题相关设置
             </CardDescription>
@@ -82,8 +86,27 @@ function SharedSkeletonGroups() {
               <RoundedCornerSwitch />
             </div>
             <Separator className="bg-[var(--rx-border-soft)]" />
-            <SkeletonRow />
-            <SkeletonRow />
+            <div className="flex items-center justify-between gap-4 py-2">
+              <div className="space-y-1">
+                <Label className="text-sm">主题方向</Label>
+                <p className="text-2xs text-[var(--rx-fg-faint)]">
+                  界面配色方向，实时生效
+                </p>
+              </div>
+              <DirectionSelect />
+            </div>
+            <Separator className="bg-[var(--rx-border-soft)]" />
+            <div className="flex items-center justify-between gap-4 py-2">
+              <div className="space-y-1">
+                <Label htmlFor="settings-dark" className="text-sm">
+                  深色模式
+                </Label>
+                <p className="text-2xs text-[var(--rx-fg-faint)]">
+                  浅色 / 深色界面切换
+                </p>
+              </div>
+              <DarkModeSwitch />
+            </div>
           </CardContent>
         </Card>
 
@@ -126,7 +149,7 @@ function SharedSkeletonGroups() {
   );
 }
 
-/** 圆角开关（已接入的唯一真设置项） */
+/** 圆角开关（已接入） */
 function RoundedCornerSwitch() {
   const roundedCorners = useAppStore((state) => state.roundedCorners);
   const setRoundedCorners = useAppStore((state) => state.setRoundedCorners);
@@ -136,6 +159,43 @@ function RoundedCornerSwitch() {
       checked={roundedCorners}
       onCheckedChange={setRoundedCorners}
       aria-label="圆角窗口"
+    />
+  );
+}
+
+/** 主题方向选择器（已接入，实时生效） */
+function DirectionSelect() {
+  const direction = useAppStore((state) => state.direction);
+  const setDirection = useAppStore((state) => state.setDirection);
+  return (
+    <Select
+      value={direction}
+      onValueChange={(value) => setDirection(value as Direction)}
+    >
+      <SelectTrigger className="w-36" aria-label="主题方向">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {DIRECTIONS.map((d) => (
+          <SelectItem key={d.id} value={d.id}>
+            {d.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/** 深色模式开关（已接入） */
+function DarkModeSwitch() {
+  const dark = useAppStore((state) => state.dark);
+  const toggleDark = useAppStore((state) => state.toggleDark);
+  return (
+    <Switch
+      id="settings-dark"
+      checked={dark}
+      onCheckedChange={toggleDark}
+      aria-label="深色模式"
     />
   );
 }

@@ -72,10 +72,11 @@ export function Sidebar() {
           collapsed ? "w-14" : "w-52",
         )}
       >
-        {/* 悬浮卡容器：上下两张卡，间距 gap 形成悬浮层级 */}
+        {/* 悬浮卡容器：上下两张卡，间距 gap 形成悬浮层级；内边距随宽度过渡 */}
         <div
           className={cn(
             "flex h-full flex-col gap-3 overflow-hidden",
+            "transition-[padding] duration-[var(--rx-dur-slow)] ease-[var(--rx-ease)] motion-reduce:transition-none",
             collapsed ? "p-2" : "p-3",
           )}
         >
@@ -108,8 +109,13 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* 卡 2：功能卡（导航 + 主题控制 + 收缩） */}
-          <div className="flex min-h-0 flex-1 flex-col rounded-[var(--rx-r-m)] bg-[var(--rx-bg-elev)] p-2">
+          {/* 卡 2：功能卡（导航 + 主题控制 + 收缩）；收缩态去内边距让按钮贴卡居中 */}
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 flex-col rounded-[var(--rx-r-m)] bg-[var(--rx-bg-elev)]",
+              collapsed ? "p-0" : "p-2",
+            )}
+          >
             {/* 导航：图标列不动，文字淡出；收缩态 Tooltip 补语义 */}
             <nav
               className="flex-1 space-y-0.5 overflow-y-auto"
@@ -125,8 +131,10 @@ export function Sidebar() {
                     aria-current={active ? "page" : undefined}
                     aria-label={collapsed ? label : undefined}
                     className={cn(
-                      "rx-press flex w-full items-center rounded-[var(--rx-r-m)] px-3 py-2 text-sm transition-colors",
-                      collapsed ? "gap-0" : "gap-2.5",
+                      "rx-press flex items-center rounded-[var(--rx-r-m)] text-sm transition-colors",
+                      collapsed
+                        ? "h-8 w-8 justify-center"
+                        : "w-full gap-2.5 px-3 py-2",
                       active
                         ? "font-medium rx-accent-soft"
                         : "text-[var(--rx-fg-dim)] hover:bg-[var(--rx-sidebar-hover)]",
@@ -243,8 +251,10 @@ export function Sidebar() {
                 variant="ghost"
                 size={collapsed ? "icon" : "sm"}
                 className={cn(
-                  "rx-press w-full",
-                  !collapsed && "justify-start text-[var(--rx-fg-dim)]",
+                  "rx-press",
+                  collapsed
+                    ? "h-8 w-8 self-center"
+                    : "w-full justify-start text-[var(--rx-fg-dim)]",
                 )}
                 onClick={toggleSidebar}
                 aria-expanded={!collapsed}

@@ -60,7 +60,26 @@ describe("DiagnosticsCard 连接诊断", () => {
     );
     render(<DiagnosticsCard />);
     expect(
-      await screen.findByText(`运行 v0.0.9 ≠ 内置 v${BUNDLED_ADDON_VERSION}`),
+      await screen.findByText(
+        `插件过旧 v0.0.9（内置 v${BUNDLED_ADDON_VERSION}，请重装）`,
+      ),
     ).toBeInTheDocument();
+  });
+
+  it("插件未连接时配套插件显示异常、Profile 显示未知", async () => {
+    reasonixStatusMock.mockRejectedValue(new Error("conn refused"));
+    render(<DiagnosticsCard />);
+    // 插件行 fail
+    expect(await screen.findByText("未连接")).toBeInTheDocument();
+    // Profile 行 detail 显示未知（插件未连接）
+    expect(await screen.findByText("未知（插件未连接）")).toBeInTheDocument();
+  });
+
+  it("collection 非 open 时 Profile 显示异常", async () => {
+    reasonixStatusMock.mockResolvedValue(
+      statusResult({ collectionState: "closed" }),
+    );
+    render(<DiagnosticsCard />);
+    expect(await screen.findByText("closed")).toBeInTheDocument();
   });
 });

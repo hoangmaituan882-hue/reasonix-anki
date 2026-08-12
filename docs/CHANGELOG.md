@@ -5,6 +5,13 @@
 
 ## 未发布（工作区）
 
+### 发布层审查修复（review）
+- **release 幂等性**：`buildInfo.ts` 加入 `.gitignore` 并移出 git 跟踪（BUILD_TIME 每次必变不再污染工作区，第二次 release 不再因校验中止）；`release.mjs` commit 改 `git rev-parse` 直取（不再依赖生成文件正则/静默 unknown）；非 git 环境报友好错误
+- **DiagnosticsCard**：版本不匹配区分方向（插件过旧请重装 vs 应用较旧请升级）；Profile fail 显示"未知（插件未连接）"；CheckRow 加 `role=status`（无障碍）
+- **SettingsSheet**：分栏/标签导航列表补"连接诊断"（与实际渲染顺序一致）
+- **测试补强**：`checkCleanWorkspace` 抽为可测导出（可注入 exec）+ 3 用例；DiagnosticsCard 补插件 fail/Profile fail 2 用例
+- 测试：前端 93→98；插件 107、tsc/build 通过
+
 ### 发布分发层（P8，手动分发）
 - **构建产物管线**：新增 `npm run release`（`scripts/release.mjs`）——校验工作区干净 → `addon:sync`（纪律 8）→ `build:info` → `tauri build` → 产物复制到 `dist/release/ReasonixAnki-v{版本}-{commit}/`（NSIS 包 + `.ankiaddon` + `RELEASE.json` 清单，防旧产物混淆）；`npm run build:info`（`scripts/build-info.mjs`）注入 `buildInfo.ts`（APP_VERSION/GIT_COMMIT/BUILD_TIME）
 - **连接诊断页**：新建 `DiagnosticsCard`（Anki 运行 / :8765 可达 / 插件版本匹配 / Profile 状态 4 项），接入设置页插件与同步组下方

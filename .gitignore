@@ -28,3 +28,6 @@ __pycache__/
 # Rust build artifacts
 src-tauri/target
 src-tauri/gen/schemas
+
+# 构建生成物（build:info 生成，BUILD_TIME 每次必变，不入库防污染 git status）
+src/lib/buildInfo.ts

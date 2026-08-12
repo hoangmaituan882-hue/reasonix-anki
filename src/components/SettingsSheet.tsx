@@ -250,7 +250,7 @@ function ColumnsLayout() {
         data-testid="columns-nav"
         className="hidden w-36 shrink-0 flex-col gap-1.5 sm:flex"
       >
-        {["外观", "学习", "插件与同步", "关于"].map((section) => (
+        {["外观", "学习", "插件与同步", "连接诊断", "关于"].map((section) => (
           <div
             key={section}
             className="flex items-center justify-between rounded-[var(--rx-r-m)] px-3 py-2 text-xs text-[var(--rx-fg-dim)]"
@@ -275,7 +275,7 @@ function TabsLayout() {
         data-testid="tabs-nav"
         className="flex items-center gap-1 rounded-[var(--rx-r-m)] bg-[var(--rx-sidebar)] p-1"
       >
-        {["外观", "学习", "插件与同步", "关于"].map((section, index) => (
+        {["外观", "学习", "插件与同步", "连接诊断", "关于"].map((section, index) => (
           <div
             key={section}
             className={cn(

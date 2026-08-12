@@ -10,6 +10,7 @@ import {
 import { CircleCheck, CircleX, Loader2 } from "lucide-react";
 import { anki } from "../lib/anki/actions";
 import { reasonixStatus } from "../lib/reasonix-addon/client";
+import { versionNumber } from "../lib/reasonix-addon/capabilities";
 import { BUNDLED_ADDON_VERSION } from "../lib/reasonix-addon/bundledVersion";
 
 type CheckState = "checking" | "ok" | "fail";
@@ -38,7 +39,10 @@ function CheckRow({
         ? "text-[var(--rx-danger)]"
         : "text-[var(--rx-fg-dim)]";
   return (
-    <div className="flex items-center justify-between gap-3 py-1.5 text-xs">
+    <div
+      role="status"
+      className="flex items-center justify-between gap-3 py-1.5 text-xs"
+    >
       <span className="flex items-center gap-2 text-[var(--rx-fg-dim)]">
         {icon}
         {label}
@@ -93,6 +97,11 @@ export function DiagnosticsCard() {
 
   const versionMatch =
     addonVersion !== null && addonVersion === BUNDLED_ADDON_VERSION;
+  // 区分方向：运行 < 内置（插件过旧需重装）vs 运行 > 内置（应用较旧需升级）
+  const addonOlder =
+    addonVersion !== null &&
+    versionNumber(addonVersion) >= 0 &&
+    versionNumber(addonVersion) < versionNumber(BUNDLED_ADDON_VERSION);
 
   return (
     <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
@@ -122,16 +131,20 @@ export function DiagnosticsCard() {
               ? undefined
               : versionMatch
                 ? `v${addonVersion}`
-                : `运行 v${addonVersion} ≠ 内置 v${BUNDLED_ADDON_VERSION}`
+                : addonOlder
+                  ? `插件过旧 v${addonVersion}（内置 v${BUNDLED_ADDON_VERSION}，请重装）`
+                  : `应用较旧（内置 v${BUNDLED_ADDON_VERSION} < 运行 v${addonVersion}，请升级应用）`
           }
         />
         <CheckRow
           label="Profile 状态"
           state={collectionState === "open" ? "ok" : addonState === "ok" ? "fail" : "checking"}
           detail={
-            collectionState === "open" && profileKey
-              ? profileKey.slice(0, 12)
-              : (collectionState ?? undefined)
+            addonState !== "ok"
+              ? "未知（插件未连接）"
+              : collectionState === "open" && profileKey
+                ? profileKey.slice(0, 12)
+                : (collectionState ?? undefined)
           }
         />
         <div className="flex items-center justify-between pt-2">

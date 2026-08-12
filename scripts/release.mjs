@@ -28,13 +28,24 @@ function run(cmd, args) {
   execFileSync(cmd, args, { cwd: ROOT, stdio: "inherit" });
 }
 
-function checkCleanWorkspace() {
-  const out = execFileSync("git", ["status", "--porcelain"], {
-    cwd: ROOT,
-    encoding: "utf-8",
-  });
-  if (out.trim().length > 0) {
-    throw new Error(`工作区有未提交改动，中止发布：\n${out}`);
+/**
+ * 校验工作区干净（防止产物带未提交代码）。
+ * exec 可注入（测试用）；默认 execFileSync。
+ */
+export function checkCleanWorkspace(root = ROOT, exec = execFileSync) {
+  try {
+    const out = exec("git", ["status", "--porcelain"], {
+      cwd: root,
+      encoding: "utf-8",
+    });
+    if (out.trim().length > 0) {
+      throw new Error(`工作区有未提交改动，中止发布：\n${out}`);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("工作区有未提交改动")) {
+      throw error;
+    }
+    throw new Error("需在 git 仓库中发布（无法读取 git 状态）");
   }
 }
 
@@ -54,8 +65,10 @@ function main() {
   // 5. 复制产物到版本化发布目录
   const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
   const version = pkg.version;
-  const commit = readFileSync(join(ROOT, "src", "lib", "buildInfo.ts"), "utf-8")
-    .match(/GIT_COMMIT = "([^"]+)"/)?.[1] ?? "unknown";
+  const commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+    cwd: ROOT,
+    encoding: "utf-8",
+  }).trim();
   const releaseDir = join(ROOT, "dist", "release", `ReasonixAnki-v${version}-${commit}`);
   rmSync(releaseDir, { recursive: true, force: true });
   mkdirSync(releaseDir, { recursive: true });
@@ -87,7 +100,10 @@ function main() {
 }
 
 try {
-  main();
+  // 仅直接执行时运行（import 测试时跳过副作用）
+  if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    main();
+  }
 } catch (error) {
   console.error(`release 失败：${error.message}`);
   process.exitCode = 1;

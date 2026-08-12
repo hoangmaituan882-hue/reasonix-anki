@@ -237,14 +237,27 @@ class AnkiSchedulerAdapter:
         return int(count or 0)
 
     def today_counts(self, deck_id: int) -> dict[str, int]:
-        """Anki 原生 scheduler 口径的牌组今日准确计数（含子牌组）。"""
-        counts = self.collection.sched.counts(
-            deck_id=deck_id, include_child_decks=True
+        """Anki 原生 scheduler 口径的牌组今日计数（含子牌组累计）。
+
+        用 `sched.deck_due_tree(top_deck_id)`（Rust backend deck_tree，
+        只读无副作用）取指定牌组子树，节点含 new_count/learn_count/
+        review_count（scheduler 每日限额口径）与 total_in_deck。
+        """
+        tree = self.collection.sched.deck_due_tree(
+            self.collection.decks.id(deck_id)
         )
+        if tree is None:
+            return {
+                "deckId": int(deck_id),
+                "new": 0,
+                "learning": 0,
+                "review": 0,
+                "tomorrowDue": self.tomorrow_due(deck_id),
+            }
         return {
-            "deckId": int(deck_id),
-            "new": int(counts.new),
-            "learning": int(counts.learn),
-            "review": int(counts.review),
+            "deckId": int(tree.deck_id),
+            "new": int(tree.new_count),
+            "learning": int(tree.learn_count),
+            "review": int(tree.review_count),
             "tomorrowDue": self.tomorrow_due(deck_id),
         }

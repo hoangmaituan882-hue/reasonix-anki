@@ -69,6 +69,11 @@ class FakeDecks:
     def deck_and_child_ids(self, deck_id: int):
         return [deck_id, 43]
 
+    def id(self, deck_id: int) -> int:
+        self.id_calls = getattr(self, "id_calls", [])
+        self.id_calls.append(deck_id)
+        return deck_id
+
 
 class FakeScheduler:
     def __init__(self, collection) -> None:
@@ -112,6 +117,17 @@ class FakeScheduler:
         self.count_calls = getattr(self, "count_calls", [])
         self.count_calls.append((deck_id, include_child_decks))
         return SimpleNamespace(new=3, learn=1, review=5)
+
+    def deck_due_tree(self, top_deck_id: int) -> SimpleNamespace | None:
+        self.deck_tree_calls = getattr(self, "deck_tree_calls", [])
+        self.deck_tree_calls.append(top_deck_id)
+        return SimpleNamespace(
+            deck_id=42,
+            new_count=3,
+            learn_count=1,
+            review_count=5,
+            total_in_deck=20,
+        )
 
     def answer_card(self, answer):
         self.answer_calls.append(answer)
@@ -247,7 +263,7 @@ class AnkiSchedulerAdapterTests(unittest.TestCase):
         self.assertEqual(tomorrow, 7)
         self.assertEqual(collection.decks.deck_and_child_ids(42), [42, 43])
 
-    def test_today_counts_uses_native_scheduler_counts_with_child_decks(self) -> None:
+    def test_today_counts_uses_native_scheduler_tree_with_child_decks(self) -> None:
         _, collection, adapter = self.make_adapter()
 
         counts = adapter.today_counts(42)
@@ -262,7 +278,8 @@ class AnkiSchedulerAdapterTests(unittest.TestCase):
                 "tomorrowDue": 7,
             },
         )
-        self.assertEqual(collection.sched.count_calls, [(42, True)])
+        self.assertEqual(collection.sched.deck_tree_calls, [42])
+        self.assertEqual(collection.decks.id_calls, [42])
 
     def test_infer_card_kind_from_template_name(self) -> None:
         adapter_module, _collection, _adapter = self.make_adapter()

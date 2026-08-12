@@ -15,6 +15,8 @@
     "qa:seed": "python reasonix-addon/qa_seed.py",
     "addon:package": "python reasonix-addon/package_addon.py --output dist/reasonix-anki-addon.ankiaddon",
     "addon:sync": "node scripts/addon-sync.mjs",
+    "build:info": "node scripts/build-info.mjs",
+    "release": "node scripts/release.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },

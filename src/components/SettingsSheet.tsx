@@ -24,6 +24,8 @@ import {
   cn,
 } from "@reasonix/ui";
 import { Check, Settings } from "lucide-react";
+import { AboutCard } from "./AboutCard";
+import { DiagnosticsCard } from "./DiagnosticsCard";
 import { PluginSyncCard } from "./PluginSyncCard";
 import {
   DIRECTIONS,
@@ -134,22 +136,11 @@ function SharedSkeletonGroups() {
         {/* 插件与同步分组（真实内容：版本一致性 + 安装引导） */}
         <PluginSyncCard />
 
-        {/* 关于分组（纯骨架）：与导航项对齐 */}
-        <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">关于</CardTitle>
-              {PENDING_BADGE}
-            </div>
-            <CardDescription className="text-xs text-[var(--rx-fg-dim)]">
-              版本与项目信息
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <SkeletonRow />
-            <SkeletonRow />
-          </CardContent>
-        </Card>
+        {/* 连接诊断（P8）：逐项 Anki/插件/Profile 健康 */}
+        <DiagnosticsCard />
+
+        {/* 关于分组（P8）：版本/commit/构建时间 */}
+        <AboutCard />
       </div>
     </>
   );

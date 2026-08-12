@@ -5,6 +5,13 @@
 
 ## 未发布（工作区）
 
+### 发布分发层（P8，手动分发）
+- **构建产物管线**：新增 `npm run release`（`scripts/release.mjs`）——校验工作区干净 → `addon:sync`（纪律 8）→ `build:info` → `tauri build` → 产物复制到 `dist/release/ReasonixAnki-v{版本}-{commit}/`（NSIS 包 + `.ankiaddon` + `RELEASE.json` 清单，防旧产物混淆）；`npm run build:info`（`scripts/build-info.mjs`）注入 `buildInfo.ts`（APP_VERSION/GIT_COMMIT/BUILD_TIME）
+- **连接诊断页**：新建 `DiagnosticsCard`（Anki 运行 / :8765 可达 / 插件版本匹配 / Profile 状态 4 项），接入设置页插件与同步组下方
+- **关于组**：`AboutCard`（版本/commit/构建时间）替换骨架，设置页展示
+- 首次连接向导复用既有 DisconnectedScreen/PluginSyncCard/TodayView 提示串联（未重复造组件）
+- 测试：前端 90→93（DiagnosticsCard 3 用例）；插件 107、tsc/build 通过
+
 ### 能力协商审查补强（review）
 - **补测试**：`hasCapability` 非法 installed 版本保守拒绝 + capabilityVersions 缺键放行（capabilities.test 7→9）
 - **schemas 收紧**：`capabilityVersions` 键/值均 `min(1)`（与 protocol.py 非空一致）

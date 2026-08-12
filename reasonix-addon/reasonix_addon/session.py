@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from copy import deepcopy
 from dataclasses import dataclass, field
 from time import monotonic
@@ -56,6 +57,10 @@ class _ActiveSession:
     commands: dict[str, _CachedCommand] = field(default_factory=dict)
 
 
+# 持久化快照的 answer_history 长度上限（防止 config 无限膨胀）
+MAX_PERSISTED_HISTORY = 500
+
+
 class SessionManager:
     def __init__(
         self,
@@ -63,12 +68,88 @@ class SessionManager:
         *,
         session_id_factory: Callable[[], str] = lambda: str(uuid4()),
         clock: Callable[[], float] = monotonic,
+        wall_clock: Callable[[], float] = time.time,
+        persist: Callable[[dict[str, object]], None] | None = None,
+        load_snapshot: Callable[[], dict[str, object] | None] | None = None,
     ) -> None:
         self.backend = backend
         self.session_id_factory = session_id_factory
         self.clock = clock
+        self.wall_clock = wall_clock
+        self.persist = persist
+        self.load_snapshot = load_snapshot
         self._session: _ActiveSession | None = None
         self._last_operation_changes: object | None = None
+
+    # ---- 持久化快照（跨插件重启恢复） ----
+
+    def _snapshot(self, session: _ActiveSession) -> dict[str, object]:
+        return {
+            "sessionId": session.session_id,
+            "deckId": session.deck_id,
+            "profileKey": session.profile_key,
+            "lastAnsweredCardId": session.last_answered_card_id,
+            "answeredCards": session.answered_cards,
+            "answerHistory": session.answer_history[-MAX_PERSISTED_HISTORY:],
+            "startedAt": session.started_at,
+        }
+
+    def _save_snapshot(self) -> None:
+        session = self._session
+        if self.persist is None or session is None:
+            return
+        self.persist(self._snapshot(session))
+
+    def _clear_snapshot(self) -> None:
+        if self.persist is None:
+            return
+        self.persist({})  # 空快照 = 无活动会话
+
+    def _resume_from_snapshot(self, deck_id: int, profile_key: str) -> bool:
+        """同 deck + 同 profile 的持久快照存在时重建会话（跨插件重启）。"""
+        if self.load_snapshot is None or self._session is not None:
+            return False
+        try:
+            snapshot = self.load_snapshot()
+        except Exception:
+            return False
+        if not isinstance(snapshot, dict):
+            return False
+        if (
+            snapshot.get("deckId") != deck_id
+            or snapshot.get("profileKey") != profile_key
+        ):
+            return False
+        session_id = snapshot.get("sessionId")
+        if not isinstance(session_id, str) or not session_id:
+            return False
+        history = snapshot.get("answerHistory")
+        self._session = _ActiveSession(
+            session_id=session_id,
+            deck_id=deck_id,
+            profile_key=profile_key,
+            last_answered_card_id=snapshot.get("lastAnsweredCardId"),
+            answered_cards=(
+                int(snapshot["answeredCards"]) if snapshot.get("answeredCards") else 0
+            ),
+            started_at=(
+                float(snapshot["startedAt"]) if snapshot.get("startedAt") else self.wall_clock()
+            ),
+            answer_history=(
+                [
+                    (int(pair[0]), int(pair[1]))
+                    for pair in history
+                    if isinstance(pair, list) and len(pair) == 2
+                ]
+                if isinstance(history, list)
+                else []
+            ),
+            # 幂等 commands 缓存不持久化：重启后旧 requestId 不命中
+            commands={},
+        )
+        # 恢复后重新从 scheduler 队首取（队列归 Anki 所有，不持久化 active_item）
+        self._session.active_item = None
+        return True
 
     @property
     def has_active_session(self) -> bool:
@@ -86,6 +167,7 @@ class SessionManager:
 
         self._session = None
         self._last_operation_changes = None
+        self._clear_snapshot()
 
     def start(self, *, deck_id: int, profile_key: str) -> dict[str, object]:
         if self._session is not None:
@@ -104,14 +186,21 @@ class SessionManager:
             )
         if deck_id <= 0 or not profile_key:
             raise SessionError("INVALID_REQUEST", "deckId and profileKey are required.")
+
+        # 跨插件重启恢复：同 deck + 同 profile 的持久快照存在则重建会话
+        if self._resume_from_snapshot(deck_id, profile_key):
+            self._last_operation_changes = self.backend.start(deck_id)
+            return {"sessionId": self._session.session_id}
+
         self._last_operation_changes = self.backend.start(deck_id)
         session_id = self.session_id_factory()
         self._session = _ActiveSession(
             session_id=session_id,
             deck_id=deck_id,
             profile_key=profile_key,
-            started_at=self.clock(),
+            started_at=self.wall_clock(),
         )
+        self._save_snapshot()
         return {"sessionId": session_id}
 
     def _require_session(
@@ -122,6 +211,7 @@ class SessionManager:
             raise SessionError("SESSION_NOT_FOUND", "The study session is not active.")
         if session.profile_key != profile_key:
             self._session = None
+            self._clear_snapshot()
             raise SessionError(
                 "PROFILE_CHANGED",
                 "The active Anki profile changed during the study session.",
@@ -275,13 +365,15 @@ class SessionManager:
         session.answered_cards += 1
         session.answer_history.append((expected_card_id, ease))
         session.active_item = None
-        return self._cache_result(
+        result = self._cache_result(
             session,
             request_id=request_id,
             action="session.answer",
             fingerprint=fingerprint,
             result={"answeredCardId": expected_card_id, "ease": ease},
         )
+        self._save_snapshot()
+        return result
 
     def undo(
         self,
@@ -330,13 +422,15 @@ class SessionManager:
             and session.answer_history[-1][0] == previous_card_id
         ):
             session.answer_history.pop()
-        return self._cache_result(
+        result = self._cache_result(
             session,
             request_id=request_id,
             action="session.undo",
             fingerprint=fingerprint,
             result=result,
         )
+        self._save_snapshot()
+        return result
 
     def finish(
         self, *, session_id: str, profile_key: str
@@ -344,7 +438,9 @@ class SessionManager:
         session = self._require_session(
             session_id=session_id, profile_key=profile_key
         )
-        duration_ms = max(0, int((self.clock() - session.started_at) * 1000))
+        # durationMs 用墙钟：跨重启恢复的会话 started_at 是墙钟快照，
+        # 用 monotonic 计算会得到负值或巨大值
+        duration_ms = max(0, int((self.wall_clock() - session.started_at) * 1000))
         ratings = {
             str(ease): sum(
                 1
@@ -380,4 +476,5 @@ class SessionManager:
             "tomorrowDue": tomorrow_due,
         }
         self._session = None
+        self._clear_snapshot()
         return result

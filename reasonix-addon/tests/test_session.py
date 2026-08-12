@@ -305,7 +305,7 @@ class SchedulerSessionTests(unittest.TestCase):
         manager = session.SessionManager(
             backend,
             session_id_factory=lambda: "study-session-1",
-            clock=lambda: next(times),
+            wall_clock=lambda: next(times),
         )
         manager.start(deck_id=42, profile_key="profile-qa")
         manager.next(session_id="study-session-1", profile_key="profile-qa")
@@ -345,6 +345,100 @@ class SchedulerSessionTests(unittest.TestCase):
         with self.assertRaises(session.SessionError) as raised:
             manager.next(session_id="study-session-1", profile_key="profile-qa")
         self.assertEqual(raised.exception.code, "SESSION_NOT_FOUND")
+
+    def test_resumes_a_persisted_session_after_restart(self) -> None:
+        session = load_session_module()
+        backend = FakeSchedulerBackend(
+            [
+                scheduler_item(101, new=2, learning=1, review=4),
+                scheduler_item(202, new=2, learning=1, review=3),
+            ]
+        )
+        store: dict[str, object] = {}
+
+        # 第一个实例：start + answer 后持久化快照
+        first = session.SessionManager(
+            backend,
+            session_id_factory=lambda: "study-session-1",
+            wall_clock=lambda: 1000.0,
+            persist=lambda s: store.__setitem__("snapshot", s),
+            load_snapshot=lambda: store.get("snapshot"),
+        )
+        started = first.start(deck_id=42, profile_key="profile-qa")
+        first.answer(
+            session_id=started["sessionId"],
+            expected_card_id=101,
+            ease=3,
+            request_id="req-1",
+            profile_key="profile-qa",
+        )
+
+        # 模拟重启：新实例，同一 backend（Anki 未重启，scheduler 状态延续）
+        second = session.SessionManager(
+            backend,
+            session_id_factory=lambda: "study-session-2",
+            wall_clock=lambda: 1010.0,
+            persist=lambda s: None,
+            load_snapshot=lambda: store.get("snapshot"),
+        )
+        resumed = second.start(deck_id=42, profile_key="profile-qa")
+
+        self.assertEqual(resumed["sessionId"], "study-session-1")
+        self.assertEqual(second._session.answered_cards, 1)
+        self.assertIsNone(second._session.active_item)  # 队列归 Anki，重取
+
+        # 旧 requestId 不命中缓存（幂等缓存不持久化）
+        result = second.answer(
+            session_id="study-session-1",
+            expected_card_id=202,
+            ease=4,
+            request_id="req-1",
+            profile_key="profile-qa",
+        )
+        self.assertEqual(result["answeredCardId"], 202)
+
+    def test_resume_rejects_a_different_profile(self) -> None:
+        session = load_session_module()
+        backend = FakeSchedulerBackend(
+            [scheduler_item(101, new=2, learning=1, review=4)]
+        )
+        store: dict[str, object] = {}
+        first = session.SessionManager(
+            backend,
+            session_id_factory=lambda: "study-session-1",
+            persist=lambda s: store.update({"snapshot": s}),
+            load_snapshot=lambda: store.get("snapshot"),
+        )
+        first.start(deck_id=42, profile_key="profile-qa")
+
+        second = session.SessionManager(
+            backend,
+            session_id_factory=lambda: "study-session-2",
+            persist=lambda s: None,
+            load_snapshot=lambda: store.get("snapshot"),
+        )
+        # 异 profile：不恢复，走全新会话
+        started = second.start(deck_id=42, profile_key="profile-other")
+        self.assertEqual(started["sessionId"], "study-session-2")
+
+    def test_finish_clears_the_persisted_snapshot(self) -> None:
+        session = load_session_module()
+        backend = FakeSchedulerBackend(
+            [scheduler_item(101, new=2, learning=1, review=4)]
+        )
+        cleared: list[dict[str, object]] = []
+        manager = session.SessionManager(
+            backend,
+            session_id_factory=lambda: "study-session-1",
+            wall_clock=lambda: 1000.0,
+            persist=cleared.append,
+            load_snapshot=lambda: None,
+        )
+        started = manager.start(deck_id=42, profile_key="profile-qa")
+        manager.finish(session_id=started["sessionId"], profile_key="profile-qa")
+
+        # persist 最后被调用一次且参数为空快照（清空标记）
+        self.assertEqual(cleared[-1], {})
 
 
 if __name__ == "__main__":

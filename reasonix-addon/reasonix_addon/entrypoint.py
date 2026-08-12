@@ -117,7 +117,31 @@ def install(
 
         profile_key = derive_profile_key(collection_path)
         adapter = scheduler_adapter_factory(collection)
-        manager = SessionManager(adapter)
+
+        # 会话快照持久化到 addon config（config 通道已存在，跨重启保留）。
+        # 快照按 profileKey 隔离存储于 config["session"] 映射；空 dict = 无活动会话。
+        def persist_session_snapshot(snapshot: dict[str, object]) -> None:
+            nonlocal config
+            sessions = dict(config.get("session") or {})
+            sessions[profile_key] = snapshot
+            config_to_write = config
+            config_to_write["session"] = sessions
+            mw.taskman.run_on_main(
+                lambda: addon_manager.writeConfig(addon_name, config_to_write)
+            )
+
+        def load_session_snapshot() -> dict[str, object] | None:
+            sessions = config.get("session")
+            if not isinstance(sessions, dict):
+                return None
+            snapshot = sessions.get(profile_key)
+            return snapshot if isinstance(snapshot, dict) else None
+
+        manager = SessionManager(
+            adapter,
+            persist=persist_session_snapshot,
+            load_snapshot=load_session_snapshot,
+        )
         service = AddonService(
             manager,
             token_provider=lambda: permission_manager.token,

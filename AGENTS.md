@@ -394,6 +394,7 @@ npm run build          # tsc + vite 生产构建
 4. **写操作测试不污染用户库**：测试笔记放 `ceshi` 牌组、打 `reasonix-*-test` 标签，回路测完立即 deleteNotes 并 findNotes 确认零残留；复习测试用 B（会话内 bury）滑过，不真评分。
 5. 改动后链路：`tsc` → `vite build` → （改了 Rust 则 `cargo check`）→ 窗口/HMR 实测。
 6. pip 连不上 pypi（镜像也不行）——图像处理用 ffmpeg（本机已装），别指望临时装 Python 包。
+7. **每次改动必须登记 `docs/CHANGELOG.md`**：任何代码/文档/配置/UI/插件改动，提交 git 前必须先在该文件"未发布"区追加一条记录（格式见文件头部模板），与 commit 同步；遗漏即视为未完成。
 
 ---
 

@@ -6,21 +6,7 @@ import {
   type SettingsDesign,
   type View,
 } from "./app";
-
-/** 测试环境 jsdom 的 localStorage 被 Node 实验特性架空，注入内存实现 */
-function createMemoryStorage(): Storage {
-  const map = new Map<string, string>();
-  return {
-    get length() {
-      return map.size;
-    },
-    clear: () => map.clear(),
-    getItem: (key) => (map.has(key) ? map.get(key)! : null),
-    key: (index) => [...map.keys()][index] ?? null,
-    removeItem: (key) => void map.delete(key),
-    setItem: (key, value) => void map.set(key, String(value)),
-  } as Storage;
-}
+import { createMemoryStorage } from "../test/helpers";
 
 describe("app views", () => {
   it("names the new default today view", () => {

@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import type {
   JapaneseWordRecord,
-  VocabularyFieldMapping,
 } from "../features/vocabulary/lapisAdapter";
 import {
   detectStandardLapisMapping,
@@ -22,139 +21,31 @@ import {
 } from "../lib/reasonix-addon/client";
 import { withRetry } from "../lib/reasonix-addon/retry";
 import type {
-  SessionFinishResponse,
-  SessionNextResponse,
-  SessionRevealResponse,
   StudyCard,
 } from "../lib/reasonix-addon/schemas";
+import type {
+  StudySessionApi,
+  StudyMappingRepository,
+  StudySessionState,
+  StudyReport,
+} from "./studySessionTypes";
+import {
+  REQUIRED_CAPABILITIES,
+  errorMessage,
+  hasErrorCode,
+} from "./studySessionUtils";
 
-export type NativeEase = 1 | 2 | 3 | 4;
-export type StudyReport = SessionFinishResponse["result"];
-export type StudyAnswerRecord = {
-  cardId: number;
-  ease: NativeEase;
-  answeredAt: number;
-};
-export type StudyPhase =
-  | "idle"
-  | "starting"
-  | "front"
-  | "revealing"
-  | "back"
-  | "answering"
-  | "undoing"
-  | "mapping"
-  | "done"
-  | "error";
-
-export interface StudySessionApi {
-  status(requestId: string): Promise<{
-    profileKey: string | null;
-    profileName?: string | null;
-    collectionState: "open" | "closed" | "temporarilyClosed";
-    syncState: "idle" | "syncing" | "error";
-    capabilities: string[];
-  }>;
-  requestPermission(requestId: string): Promise<
-    | { permission: "granted"; token: string }
-    | { permission: "denied" }
-  >;
-  start(input: {
-    requestId: string;
-    token: string;
-    deckId: number;
-  }): Promise<{ sessionId: string; profileKey: string }>;
-  next(input: {
-    requestId: string;
-    token: string;
-    sessionId: string;
-  }): Promise<SessionNextResponse["result"]>;
-  reveal(input: {
-    requestId: string;
-    token: string;
-    sessionId: string;
-    expectedCardId: number;
-  }): Promise<SessionRevealResponse["result"]>;
-  answer(input: {
-    requestId: string;
-    token: string;
-    sessionId: string;
-    expectedCardId: number;
-    ease: NativeEase;
-  }): Promise<{ answeredCardId: number; ease: NativeEase }>;
-  undo(input: {
-    requestId: string;
-    token: string;
-    sessionId: string;
-  }): Promise<{
-    restoredCardId: number;
-    card: StudyCard;
-    remaining: SessionNextResponse["result"]["remaining"];
-  }>;
-  finish(input: {
-    requestId: string;
-    token: string;
-    sessionId: string;
-  }): Promise<StudyReport>;
-  syncStart?(input: { requestId: string; token: string }): Promise<{
-    state: "starting" | "syncing" | "idle";
-  }>;
-  syncStatus?(input: { requestId: string; token: string }): Promise<{
-    state: "idle" | "syncing" | "error";
-    error: string | null;
-  }>;
-}
-
-export interface StudyMappingRepository {
-  load(input: {
-    profileKey: string;
-    modelId: number;
-    fieldNames: readonly string[];
-  }): Promise<VocabularyFieldMapping | null>;
-  save(input: {
-    profileKey: string;
-    modelId: number;
-    fieldNames: readonly string[];
-    mapping: VocabularyFieldMapping;
-  }): Promise<void>;
-}
-
-export interface StudySessionState {
-  phase: StudyPhase;
-  deckId: number | null;
-  deckName: string | null;
-  sessionId: string | null;
-  profileKey: string | null;
-  profileName: string | null;
-  token: string | null;
-  card: StudyCard | null;
-  word: JapaneseWordRecord | null;
-  remaining: SessionNextResponse["result"]["remaining"] | null;
-  intervals: SessionRevealResponse["result"]["intervals"] | null;
-  answeredCards: number;
-  answerHistory: StudyAnswerRecord[];
-  report: StudyReport | null;
-  syncState: "idle" | "syncing" | "error";
-  canUndo: boolean;
-  error: string | null;
-  start(deckId: number, deckName: string): Promise<void>;
-  reveal(): Promise<void>;
-  answer(ease: NativeEase): Promise<void>;
-  undo(): Promise<void>;
-  finish(): Promise<void>;
-  resume(): Promise<void>;
-  applyMapping(mapping: VocabularyFieldMapping): Promise<void>;
-  reset(): void;
-}
-
-const REQUIRED_CAPABILITIES = [
-  "session.start",
-  "session.next",
-  "session.reveal",
-  "session.answer",
-  "session.undo",
-  "session.finish",
-] as const;
+// re-export 类型与工具，保持 studySession.ts 对外 API 不变
+export type {
+  NativeEase,
+  StudyReport,
+  StudyAnswerRecord,
+  StudyPhase,
+  StudySessionApi,
+  StudyMappingRepository,
+  StudySessionState,
+} from "./studySessionTypes";
+export { REQUIRED_CAPABILITIES, errorMessage, hasErrorCode } from "./studySessionUtils";
 
 const defaultApi: StudySessionApi = {
   status: reasonixStatus,
@@ -177,19 +68,6 @@ const defaultMappings: StudyMappingRepository = {
     await (await vocabularyMappings()).save(input);
   },
 };
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function hasErrorCode(error: unknown, code: string): boolean {
-  return Boolean(
-    error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as { code?: unknown }).code === code,
-  );
-}
 
 export function createStudySessionStore(
   api: StudySessionApi = defaultApi,

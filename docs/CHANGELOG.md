@@ -5,6 +5,11 @@
 
 ## 未发布（工作区）
 
+### 版本自动递增（真·自动）
+- **`addon:sync` 自动递增版本**：`scripts/addon-sync.mjs` 新增 git 检测（`reasonix-addon/` 未提交变更 → patch+1，幂等防重复），移除人工递增要求；`parseVersion`/`bumpPatch` 纯函数 + 3 单元测试；main 入口守卫（import 测试不执行副作用）；vitest include 扩展 `scripts/*.test.mjs`
+- **AGENTS.md 纪律 8 更新**：改插件只需 `npm run addon:sync`（自动递增 + 打包 + 复制 + 生成）；**新增纪律 9**：修复/功能改动后必须 AI 审查核验版本四源一致与快照/缓存无回归
+- 实机验证：无源码变更不 bump（0.1.2 保持）、有变更 0.1.2→0.1.3、重复跑幂等
+
 ### 审查修复（代码质量与稳定性）
 - **快照恢复类型校验（review should-fix）**：`_resume_from_snapshot` 逐项校验（answeredCards/startedAt/lastAnsweredCardId/answerHistory 脏条目跳过），脏快照放弃恢复走全新会话，不崩 start；补坏快照容错测试
 - **entrypoint 读写单元（review should-fix）**：`write_config` 改为接收合并函数，读+合并+写在 `run_on_main` 内串行执行，消除调用线程读、主线程写的授权/会话互相覆盖窗口

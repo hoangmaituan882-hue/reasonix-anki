@@ -375,6 +375,24 @@ export function StudyView() {
     if (phase === "front") void replay();
   }, [phase, word?.cardId, replay]);
 
+  // 媒体预取：新卡到达时预热其媒体文件（media.ts LRU 缓存），
+  // 渲染/翻面时 resolveMediaUrl 立即命中，消除等待。失败静默不阻塞。
+  useEffect(() => {
+    if (!card?.media?.length) return;
+    let disposed = false;
+    void Promise.all(
+      card.media.map((filename) =>
+        resolveMediaUrl(filename).catch(() => null),
+      ),
+    ).then(() => {
+      if (disposed) return;
+      // 预热完成（结果由 media LRU 持有，此处无需额外处理）
+    });
+    return () => {
+      disposed = true;
+    };
+  }, [card?.cardId, card?.media]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;

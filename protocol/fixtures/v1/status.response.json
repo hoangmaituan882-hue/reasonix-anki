@@ -1,6 +1,6 @@
 {
   "result": {
-    "addonVersion": "0.1.0",
+    "addonVersion": "0.1.2",
     "protocolVersion": 1,
     "ankiVersion": "25.09.2",
     "profileKey": "sha256:qa-profile",
@@ -10,13 +10,29 @@
     "capabilities": [
       "status",
       "requestPermission",
+      "decks.today",
       "session.start",
       "session.next",
       "session.reveal",
       "session.answer",
       "session.undo",
-      "session.finish"
-    ]
+      "session.finish",
+      "sync.start",
+      "sync.status"
+    ],
+    "capabilityVersions": {
+      "status": "0.1.0",
+      "requestPermission": "0.1.0",
+      "session.start": "0.1.0",
+      "session.next": "0.1.0",
+      "session.reveal": "0.1.0",
+      "session.answer": "0.1.0",
+      "session.undo": "0.1.0",
+      "session.finish": "0.1.0",
+      "sync.start": "0.1.0",
+      "sync.status": "0.1.0",
+      "decks.today": "0.1.1"
+    }
   },
   "error": null
 }

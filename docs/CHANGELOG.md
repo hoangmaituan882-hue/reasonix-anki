@@ -5,6 +5,12 @@
 
 ## 未发布（工作区）
 
+### 能力协商审查补强（review）
+- **补测试**：`hasCapability` 非法 installed 版本保守拒绝 + capabilityVersions 缺键放行（capabilities.test 7→9）
+- **schemas 收紧**：`capabilityVersions` 键/值均 `min(1)`（与 protocol.py 非空一致）
+- **fixture 更新**：`status.response.json` 补 `capabilityVersions` 示例 + `addonVersion` 同步 0.1.2 + capabilities 补 decks.today/sync.*；旧结构用例显式删字段验证向后兼容
+- 测试：插件 107、前端 88→90；tsc/build 通过
+
 ### 能力协商升级（v2 协议）
 - **`status.capabilityVersions`（版本化能力协商）**：插件 `CAPABILITY_MIN_VERSIONS` 静态映射（能力 → 引入版本，如 `decks.today`=0.1.1），`status` 新增 `capabilityVersions` 字段；`capabilities` 保持 string[] 向后兼容
 - **协议校验**：`capabilityVersions` 可选（Record<string,string>），旧插件无此字段仍通过；新增协议测试（合法/非法/向后兼容）

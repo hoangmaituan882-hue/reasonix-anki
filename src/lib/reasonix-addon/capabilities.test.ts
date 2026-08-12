@@ -59,6 +59,21 @@ describe("hasCapability", () => {
     expect(hasCapability(status, "decks.today", "0.1.1")).toBe(true);
   });
 
+  it("capabilityVersions 缺该能力键 → 按存在性放行", () => {
+    const status = makeStatus({
+      capabilityVersions: { "session.start": "0.1.0" },
+    });
+    // decks.today 在 capabilities 里但无版本键 → 不误拒
+    expect(hasCapability(status, "decks.today", "0.1.1")).toBe(true);
+  });
+
+  it("installed 版本非法（非 semver）→ 保守拒绝", () => {
+    const status = makeStatus({
+      capabilityVersions: { "session.start": "v0.1.0" },
+    });
+    expect(hasCapability(status, "session.start", "0.1.0")).toBe(false);
+  });
+
   it("null status → false", () => {
     expect(hasCapability(null, "session.start")).toBe(false);
     expect(hasCapability(undefined, "session.start")).toBe(false);

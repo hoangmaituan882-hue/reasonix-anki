@@ -175,7 +175,7 @@ export const statusResponseSchema = z.object({
     collectionState: z.enum(["open", "closed", "temporarilyClosed"]),
     syncState: z.enum(["idle", "syncing", "error"]),
     capabilities: z.array(z.string().min(1)),
-    capabilityVersions: z.record(z.string(), z.string()).optional(),
+    capabilityVersions: z.record(z.string().min(1), z.string().min(1)).optional(),
     health: addonHealthSchema.optional(),
   }),
   error: z.null(),

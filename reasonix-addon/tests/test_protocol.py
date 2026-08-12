@@ -135,6 +135,7 @@ class ProtocolFixtureTests(unittest.TestCase):
 
         # 旧插件无 capabilityVersions → 仍通过（向后兼容）
         legacy = fixture("status.response.json")
+        del legacy["result"]["capabilityVersions"]
         self.assertIsNone(parse_status_response(legacy)["result"].get("capabilityVersions"))
 
     def test_python_accepts_additive_runtime_health_status(self) -> None:

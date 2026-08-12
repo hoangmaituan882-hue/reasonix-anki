@@ -50,6 +50,22 @@ CAPABILITIES = (
     "sync.status",
 )
 
+# 能力协商：每个能力的最低插件版本（引入该能力的版本）。
+# 前端据此判断"已装插件是否支持某能力"（旧插件不误报错配）。
+CAPABILITY_MIN_VERSIONS: dict[str, str] = {
+    "status": "0.1.0",
+    "requestPermission": "0.1.0",
+    "session.start": "0.1.0",
+    "session.next": "0.1.0",
+    "session.reveal": "0.1.0",
+    "session.answer": "0.1.0",
+    "session.undo": "0.1.0",
+    "session.finish": "0.1.0",
+    "sync.start": "0.1.0",
+    "sync.status": "0.1.0",
+    "decks.today": "0.1.1",
+}
+
 
 class RequestBridge(Protocol):
     def dispatch(self, request: object) -> dict[str, object]: ...
@@ -543,6 +559,7 @@ class AddonRuntime:
                 else "idle"
             ),
             "capabilities": list(CAPABILITIES),
+            "capabilityVersions": dict(CAPABILITY_MIN_VERSIONS),
             "health": {
                 "serviceState": service_state,
                 "threadAlive": thread_alive,

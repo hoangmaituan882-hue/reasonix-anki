@@ -5,6 +5,12 @@
 
 ## 未发布（工作区）
 
+### 能力协商升级（v2 协议）
+- **`status.capabilityVersions`（版本化能力协商）**：插件 `CAPABILITY_MIN_VERSIONS` 静态映射（能力 → 引入版本，如 `decks.today`=0.1.1），`status` 新增 `capabilityVersions` 字段；`capabilities` 保持 string[] 向后兼容
+- **协议校验**：`capabilityVersions` 可选（Record<string,string>），旧插件无此字段仍通过；新增协议测试（合法/非法/向后兼容）
+- **前端 `hasCapability(status, name, minVersion?)`**：能力存在性 + 版本门槛检查（`versionNumber` semver 比较）；`Pick` 类型兼容精简/完整 status；studySession 的 REQUIRED_CAPABILITIES 检查与 TodayView 的 sync.start/session.start 检查改用 `hasCapability`
+- 测试：插件 106→107（协议）、前端 81→88（capabilities 7 用例）；tsc/build 通过
+
 ### 版本自动递增（真·自动）
 - **`addon:sync` 自动递增版本**：`scripts/addon-sync.mjs` 新增 git 检测（`reasonix-addon/` 未提交变更 → patch+1，幂等防重复），移除人工递增要求；`parseVersion`/`bumpPatch` 纯函数 + 3 单元测试；main 入口守卫（import 测试不执行副作用）；vitest include 扩展 `scripts/*.test.mjs`
 - **AGENTS.md 纪律 8 更新**：改插件只需 `npm run addon:sync`（自动递增 + 打包 + 复制 + 生成）；**新增纪律 9**：修复/功能改动后必须 AI 审查核验版本四源一致与快照/缓存无回归

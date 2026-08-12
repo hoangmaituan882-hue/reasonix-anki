@@ -9,6 +9,7 @@ import {
   reasonixStatus,
   reasonixSyncStart,
 } from "../../lib/reasonix-addon/client";
+import { hasCapability } from "../../lib/reasonix-addon/capabilities";
 import { withRetry } from "../../lib/reasonix-addon/retry";
 import { useStudySessionStore } from "../../stores/studySession";
 import { TodayDashboard } from "./TodayDashboard";
@@ -49,7 +50,7 @@ export function TodayView() {
       status.collectionState !== "open" ||
       !["idle", "error"].includes(status.syncState) ||
       !status.profileKey ||
-      !status.capabilities.includes("sync.start") ||
+      !hasCapability(status, "sync.start", "0.1.0") ||
       (current?.profileKey === status.profileKey &&
         (current.inFlight || current.completed || current.attempts >= 4))
     ) {
@@ -161,7 +162,7 @@ export function TodayView() {
     status &&
       status.collectionState === "open" &&
       status.syncState === "idle" &&
-      status.capabilities.includes("session.start"),
+      hasCapability(status, "session.start", "0.1.0"),
   );
   const syncState = statusQuery.isError
     ? "unavailable"

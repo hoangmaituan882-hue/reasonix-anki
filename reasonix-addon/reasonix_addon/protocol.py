@@ -269,6 +269,13 @@ def parse_status_response(value: object) -> dict[str, Any]:
         isinstance(capability, str) and capability for capability in capabilities
     ):
         raise ProtocolValidationError("result.capabilities is invalid")
+    capability_versions = result.get("capabilityVersions")
+    if capability_versions is not None:
+        if not isinstance(capability_versions, dict) or not all(
+            isinstance(name, str) and isinstance(version, str) and name and version
+            for name, version in capability_versions.items()
+        ):
+            raise ProtocolValidationError("result.capabilityVersions is invalid")
     health = result.get("health")
     if health is not None:
         if not isinstance(health, dict):

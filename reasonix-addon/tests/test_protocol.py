@@ -113,6 +113,30 @@ class ProtocolFixtureTests(unittest.TestCase):
             with self.assertRaises(ProtocolValidationError):
                 parse_request(request)
 
+    def test_python_accepts_and_validates_capability_versions(self) -> None:
+        response = fixture("status.response.json")
+        response["result"]["capabilityVersions"] = {
+            "session.start": "0.1.0",
+            "decks.today": "0.1.1",
+        }
+        parsed = parse_status_response(response)
+        self.assertEqual(
+            parsed["result"]["capabilityVersions"]["decks.today"], "0.1.1"
+        )
+
+        # 非法值（非字符串版本）→ 拒绝
+        broken = {
+            "result": dict(response["result"]),
+            "error": None,
+        }
+        broken["result"]["capabilityVersions"] = {"session.start": 123}
+        with self.assertRaises(ProtocolValidationError):
+            parse_status_response(broken)
+
+        # 旧插件无 capabilityVersions → 仍通过（向后兼容）
+        legacy = fixture("status.response.json")
+        self.assertIsNone(parse_status_response(legacy)["result"].get("capabilityVersions"))
+
     def test_python_accepts_additive_runtime_health_status(self) -> None:
         status_response = fixture("status.response.json")
         status_response["result"]["health"] = {

@@ -20,6 +20,7 @@ import {
   reasonixStatus,
 } from "../lib/reasonix-addon/client";
 import { withRetry } from "../lib/reasonix-addon/retry";
+import { hasCapability } from "../lib/reasonix-addon/capabilities";
 import type {
   StudyCard,
 } from "../lib/reasonix-addon/schemas";
@@ -214,7 +215,7 @@ export function createStudySessionStore(
         }
         set({ profileName: status.profileName ?? null, syncState: "idle" });
         const missing = REQUIRED_CAPABILITIES.filter(
-          (capability) => !status.capabilities.includes(capability),
+          (capability) => !hasCapability(status, capability, "0.1.0"),
         );
         if (missing.length > 0) {
           throw new Error(`Reasonix 插件缺少能力：${missing.join(", ")}`);

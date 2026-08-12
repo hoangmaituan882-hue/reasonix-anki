@@ -9,7 +9,7 @@
 - **测试重复代码提取**：`createMemoryStorage` 提取到 `src/test/helpers.ts`（3 处重复实现 → 共享导入，app.test/SettingsSheet.test/Sidebar.test）
 - **studySession.ts 拆分（601→主体+2 模块）**：类型迁至 `studySessionTypes.ts`（NativeEase/StudyPhase/StudySessionApi/StudySessionState 等），工具与 `REQUIRED_CAPABILITIES` 迁至 `studySessionUtils.ts`；studySession.ts import + re-export 保持对外 API 不变
 - **TodayView.tsx 拆分（413→编排）**：UI 组件迁至 `TodayDashboard.tsx`，类型/纯函数迁至 `todayUtil.ts`（TodayDeckRow/dueCount/summarizeTodayDecks）；TodayView 保留数据编排并 re-export 兼容测试导入
-- 验证：插件 102、前端 75 全绿；tsc/build 通过
+- 验证：插件 102、前端 75 全绿；tsc/build/cargo check 通过
 
 ### 审查修复（skill:review）
 - **blocking：`today_counts` 误用 `decks.id(deck_id)`**——Anki 25.x `DeckManager.id(name: str, create=True)` 按名字查/建，传 int 会 PyO3 TypeError 或创建垃圾牌组；改为直接 `sched.deck_due_tree(deck_id)`（接受 DeckId 位置参数），删掉误导性 `FakeDecks.id` mock（其掩盖真实 API 差异）

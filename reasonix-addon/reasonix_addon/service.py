@@ -104,6 +104,15 @@ class AddonService:
                 result = self.manager.finish(
                     session_id=params["sessionId"], profile_key=profile_key
                 )
+            elif action == "decks.today":
+                backend = getattr(self.manager, "backend", None)
+                today_counts = getattr(backend, "today_counts", None)
+                if not callable(today_counts):
+                    return _error(
+                        "ACTION_NOT_SUPPORTED",
+                        f"Unsupported action: {action}",
+                    )
+                result = today_counts(deck_id=params["deckId"])
             else:
                 return _error(
                     "ACTION_NOT_SUPPORTED", f"Unsupported action: {action}"

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from reasonix_addon.protocol import (
     ProtocolValidationError,
+    parse_decks_today_response,
     parse_error_response,
     parse_request,
     parse_session_next_response,
@@ -38,6 +39,36 @@ class ProtocolFixtureTests(unittest.TestCase):
         request["params"]["mode"] = "mixed"
         with self.assertRaises(ProtocolValidationError):
             parse_request(request)
+
+    def test_python_accepts_the_decks_today_fixture(self) -> None:
+        request = parse_request(fixture("decks-today.request.json"))
+
+        self.assertEqual(request["action"], "decks.today")
+        self.assertEqual(request["params"], {"deckId": 1781523613318})
+
+        request["params"]["mode"] = "mixed"
+        with self.assertRaises(ProtocolValidationError):
+            parse_request(request)
+
+    def test_python_validates_the_decks_today_response(self) -> None:
+        response = fixture("decks-today.response.json")
+        parsed = parse_decks_today_response(response)
+        self.assertEqual(parsed["result"]["deckId"], 1781523613318)
+        self.assertEqual(parsed["result"]["review"], 5)
+        self.assertEqual(parsed["result"]["tomorrowDue"], 7)
+
+        broken = {
+            "result": {
+                "deckId": 1,
+                "new": -1,
+                "learning": 1,
+                "review": 5,
+                "tomorrowDue": 7,
+            },
+            "error": None,
+        }
+        with self.assertRaises(ProtocolValidationError):
+            parse_decks_today_response(broken)
 
     def test_python_requires_expected_card_id_for_answer(self) -> None:
         request = parse_request(fixture("session-answer.request.json"))

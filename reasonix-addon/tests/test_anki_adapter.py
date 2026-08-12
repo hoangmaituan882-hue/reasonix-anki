@@ -108,6 +108,11 @@ class FakeScheduler:
         self.build_calls.append(answer)
         return answer
 
+    def counts(self, *, deck_id: int, include_child_decks: bool) -> SimpleNamespace:
+        self.count_calls = getattr(self, "count_calls", [])
+        self.count_calls.append((deck_id, include_child_decks))
+        return SimpleNamespace(new=3, learn=1, review=5)
+
     def answer_card(self, answer):
         self.answer_calls.append(answer)
         self.index += 1
@@ -241,6 +246,56 @@ class AnkiSchedulerAdapterTests(unittest.TestCase):
 
         self.assertEqual(tomorrow, 7)
         self.assertEqual(collection.decks.deck_and_child_ids(42), [42, 43])
+
+    def test_today_counts_uses_native_scheduler_counts_with_child_decks(self) -> None:
+        _, collection, adapter = self.make_adapter()
+
+        counts = adapter.today_counts(42)
+
+        self.assertEqual(
+            counts,
+            {
+                "deckId": 42,
+                "new": 3,
+                "learning": 1,
+                "review": 5,
+                "tomorrowDue": 7,
+            },
+        )
+        self.assertEqual(collection.sched.count_calls, [(42, True)])
+
+    def test_infer_card_kind_from_template_name(self) -> None:
+        adapter_module, _collection, _adapter = self.make_adapter()
+        infer = adapter_module.AnkiSchedulerAdapter._infer_card_kind
+
+        self.assertEqual(infer("Vocabulary"), "vocabulary")
+        self.assertEqual(infer("Word And Sentence Card"), "word_sentence")
+        self.assertEqual(infer("Click Card"), "click")
+        self.assertEqual(infer("Sentence Card"), "sentence")
+        self.assertEqual(infer("Audio Card"), "audio")
+        self.assertEqual(infer("Listening Card"), "audio")
+        self.assertEqual(infer("VocabularyWithFurigana"), "vocabulary")
+        self.assertEqual(infer("UnknownTemplate"), "unknown")
+
+    def test_collect_media_extracts_local_filenames_and_skips_externals(self) -> None:
+        adapter_module, _collection, _adapter = self.make_adapter()
+        collect = adapter_module.AnkiSchedulerAdapter._collect_media
+
+        media = collect(
+            '声 [sound:kaigi.mp3] 例句',
+            '<img src="pic.jpg"><audio src="audio/klaxon.mp3">'
+            '<img src="https://example.com/remote.png">',
+            '.bg{background:url("bg.webp")}',
+        )
+        # kaigi.mp3（sound 标签）、pic.jpg（img src）、bg.webp（url()）
+        # 被收集；audio/klaxon.mp3 含路径分隔符、remote.png 外链被跳过
+        self.assertEqual(media, ["kaigi.mp3", "pic.jpg", "bg.webp"])
+
+        # 去重保序
+        self.assertEqual(
+            collect("[sound:a.mp3]", "[sound:a.mp3]", "b"),
+            ["a.mp3"],
+        )
 
 
 if __name__ == "__main__":

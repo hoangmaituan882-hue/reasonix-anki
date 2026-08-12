@@ -60,7 +60,10 @@ class AnkiOperationBridge:
         collection_op_factory: OperationFactory,
         collection_changes: Callable[[], object],
         expected_collection: object | None = None,
-        timeout: float = 10.0,
+        # Timeout 是 Anki operation 的预算：必须小于 Rust 代理层端到端
+        # 15s（src-tauri/src/commands.rs TIMEOUT），留出网络往返余量；
+        # 12s 给大牌组 next_item 渲染留出空间，避免 10s 误超时。
+        timeout: float = 12.0,
     ) -> None:
         if timeout <= 0:
             raise ValueError("timeout must be greater than zero")

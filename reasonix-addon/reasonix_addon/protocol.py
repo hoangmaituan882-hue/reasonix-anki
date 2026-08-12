@@ -69,6 +69,10 @@ def parse_request(value: object) -> dict[str, Any]:
         if not _is_positive_int(params.get("deckId")):
             raise ProtocolValidationError("deckId must be a positive integer")
         _require_exact_params(params, {"deckId"}, action)
+    elif action == "decks.today":
+        if not _is_positive_int(params.get("deckId")):
+            raise ProtocolValidationError("deckId must be a positive integer")
+        _require_exact_params(params, {"deckId"}, action)
     elif action in {"status", "requestPermission", "sync.start", "sync.status"}:
         _require_exact_params(params, set(), action)
     elif action in {"session.next", "session.undo", "session.finish"}:
@@ -214,6 +218,16 @@ def parse_session_finish_response(value: object) -> dict[str, Any]:
     _require_non_empty_string(result.get("sessionId"), "result.sessionId")
     if not _is_non_negative_int(result.get("answeredCards")):
         raise ProtocolValidationError("result.answeredCards is invalid")
+    return value
+
+
+def parse_decks_today_response(value: object) -> dict[str, Any]:
+    result = _parse_success_result(value)
+    if not _is_positive_int(result.get("deckId")):
+        raise ProtocolValidationError("result.deckId is invalid")
+    for field in ("new", "learning", "review", "tomorrowDue"):
+        if not _is_non_negative_int(result.get(field)):
+            raise ProtocolValidationError(f"result.{field} is invalid")
     return value
 
 

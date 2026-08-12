@@ -18,6 +18,7 @@ ADDON_VERSION = "0.1.1"
 CAPABILITIES = (
     "status",
     "requestPermission",
+    "decks.today",
     "session.start",
     "session.next",
     "session.reveal",

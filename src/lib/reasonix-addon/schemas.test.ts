@@ -20,6 +20,7 @@ import syncStartRequest from "../../../protocol/fixtures/v1/sync-start.request.j
 import syncStartResponse from "../../../protocol/fixtures/v1/sync-start.response.json";
 import syncStatusRequest from "../../../protocol/fixtures/v1/sync-status.request.json";
 import syncStatusResponse from "../../../protocol/fixtures/v1/sync-status.response.json";
+import decksTodayResponse from "../../../protocol/fixtures/v1/decks-today.response.json";
 import {
   parseAddonErrorResponse,
   parseAddonRequest,
@@ -43,6 +44,7 @@ import {
   parseSyncStartResponse,
   parseSyncStatusRequest,
   parseSyncStatusResponse,
+  parseDecksTodayResponse,
 } from "./schemas";
 
 describe("Reasonix addon protocol v1 golden fixtures", () => {
@@ -224,6 +226,24 @@ describe("Reasonix addon protocol v1 golden fixtures", () => {
           expectedCardId: 1782031602405,
           ease: 5,
         },
+      }),
+    ).toThrow();
+  });
+
+  it("parses a decks.today response from the shared fixture", () => {
+    const response = parseDecksTodayResponse(decksTodayResponse);
+
+    expect(response.result).toEqual({
+      deckId: 1781523613318,
+      new: 3,
+      learning: 1,
+      review: 5,
+      tomorrowDue: 7,
+    });
+    expect(() =>
+      parseDecksTodayResponse({
+        ...decksTodayResponse,
+        result: { ...decksTodayResponse.result, new: -1 },
       }),
     ).toThrow();
   });

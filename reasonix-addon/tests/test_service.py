@@ -225,6 +225,26 @@ class AddonServiceTests(unittest.TestCase):
         self.assertEqual(rejected["error"]["code"], "UNAUTHORIZED")
         self.assertIsNone(accepted["error"])
 
+    def test_dispatches_decks_today_to_the_backend(self) -> None:
+        backend, service = self.make_service()
+
+        response = service.handle(
+            request("decks.today", "b76c912a-953b-4eb2-bfc4-8b9d76fa2013", {"deckId": 42})
+        )
+
+        self.assertIsNone(response["error"])
+        self.assertEqual(backend.today_counts_calls, [42])
+        self.assertEqual(
+            response["result"],
+            {
+                "deckId": 42,
+                "new": 3,
+                "learning": 1,
+                "review": 5,
+                "tomorrowDue": 13,
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

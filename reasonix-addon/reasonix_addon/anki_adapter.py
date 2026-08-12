@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Callable, Mapping
 
 
@@ -49,6 +50,57 @@ class AnkiSchedulerAdapter:
         self._answer_undo_step = None
         return changes
 
+    @staticmethod
+    def _infer_card_kind(template_name: str) -> str:
+        """从模板名推断 Lapis 卡型（与前端 lapisAdapter 关键词对齐）。
+
+        关键词优先级与 src/features/vocabulary/lapisAdapter.ts 的
+        inferLapisCardKind 一致；无法识别返回 "unknown"，由前端兜底。
+        """
+        name = template_name.lower().replace("-", " ").replace("_", " ")
+        if "audio" in name or "listening" in name:
+            return "audio"
+        if "click" in name:
+            return "click"
+        if "sentence" in name and ("word" in name or "vocabulary" in name):
+            return "word_sentence"
+        if "sentence" in name:
+            return "sentence"
+        if "vocabulary" in name or "word" in name:
+            return "vocabulary"
+        return "unknown"
+
+    @staticmethod
+    def _collect_media(*texts: str) -> list[str]:
+        """从字段值/HTML 提取本地媒体文件名（[sound:] / img / audio / url()）。
+
+        仅保留纯文件名（与 Rust read_media_file 校验一致：拒绝 .. 与路径
+        分隔符，排除 http/data/blob 外链）；去重保序。
+        """
+        collected: list[str] = []
+        seen: set[str] = set()
+        patterns = (
+            r"\[sound:([^\]\s]+)\]",
+            r"<(?:img|audio)\b[^>]*\bsrc=[\"']([^\"'>]+)[\"']",
+            r"url\([\"']?([^)\"']+)[\"']?\)",
+        )
+        for text in texts:
+            for pattern in patterns:
+                for match in re.finditer(pattern, text, re.IGNORECASE):
+                    filename = match.group(1).strip()
+                    if (
+                        filename
+                        and filename not in seen
+                        and "/" not in filename
+                        and "\\" not in filename
+                        and ".." not in filename
+                        and ":" not in filename
+                        and not re.match(r"^(https?:|data:|blob:|anki:|file:)", filename, re.I)
+                    ):
+                        seen.add(filename)
+                        collected.append(filename)
+        return collected
+
     def next_item(self) -> dict[str, Any] | None:
         output = self.collection.sched.get_queued_cards(fetch_limit=1)
         if not output.cards:
@@ -73,6 +125,9 @@ class AnkiSchedulerAdapter:
         ):
             raise AnkiAdapterError("note fields are not string values")
 
+        question = card.question()
+        answer = card.answer()
+
         return {
             "card": {
                 "cardId": int(card.id),
@@ -84,12 +139,16 @@ class AnkiSchedulerAdapter:
                 "templateName": str(template["name"]),
                 "queue": int(card.queue),
                 "type": int(card.type),
-                "cardKind": "unknown",
+                "cardKind": self._infer_card_kind(str(template["name"])),
                 "fields": fields,
                 "tags": list(note.tags),
-                "question": card.question(),
-                "answer": card.answer(),
-                "media": [],
+                "question": question,
+                "answer": answer,
+                "media": self._collect_media(
+                    *(value for _name, value in fields.items()),
+                    question,
+                    answer,
+                ),
             },
             "remaining": {
                 "new": int(output.new_count),
@@ -176,3 +235,16 @@ class AnkiSchedulerAdapter:
             int(self.collection.sched.today) + 1,
         )
         return int(count or 0)
+
+    def today_counts(self, deck_id: int) -> dict[str, int]:
+        """Anki 原生 scheduler 口径的牌组今日准确计数（含子牌组）。"""
+        counts = self.collection.sched.counts(
+            deck_id=deck_id, include_child_decks=True
+        )
+        return {
+            "deckId": int(deck_id),
+            "new": int(counts.new),
+            "learning": int(counts.learn),
+            "review": int(counts.review),
+            "tomorrowDue": self.tomorrow_due(deck_id),
+        }

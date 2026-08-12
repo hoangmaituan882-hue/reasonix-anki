@@ -316,6 +316,18 @@ export const syncStatusResponseSchema = z.object({
 });
 export type SyncStatusResponse = z.infer<typeof syncStatusResponseSchema>;
 
+export const decksTodayResponseSchema = z.object({
+  result: z.object({
+    deckId: z.number().int().positive(),
+    new: z.number().int().nonnegative(),
+    learning: z.number().int().nonnegative(),
+    review: z.number().int().nonnegative(),
+    tomorrowDue: z.number().int().nonnegative(),
+  }),
+  error: z.null(),
+});
+export type DecksTodayResponse = z.infer<typeof decksTodayResponseSchema>;
+
 export function parseAddonRequest(value: unknown): AddonRequest {
   return addonRequestSchema.parse(value);
 }
@@ -406,4 +418,8 @@ export function parseSyncStartResponse(value: unknown): SyncStartResponse {
 
 export function parseSyncStatusResponse(value: unknown): SyncStatusResponse {
   return syncStatusResponseSchema.parse(value);
+}
+
+export function parseDecksTodayResponse(value: unknown): DecksTodayResponse {
+  return decksTodayResponseSchema.parse(value);
 }

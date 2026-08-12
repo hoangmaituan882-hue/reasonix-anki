@@ -76,6 +76,17 @@ class FakeSchedulerBackend:
         self.tomorrow_due_calls.append(deck_id)
         return 13
 
+    def today_counts(self, deck_id: int) -> dict[str, int]:
+        self.today_counts_calls = getattr(self, "today_counts_calls", [])
+        self.today_counts_calls.append(deck_id)
+        return {
+            "deckId": deck_id,
+            "new": 3,
+            "learning": 1,
+            "review": 5,
+            "tomorrowDue": 13,
+        }
+
 
 class SchedulerSessionTests(unittest.TestCase):
     def make_manager(self):

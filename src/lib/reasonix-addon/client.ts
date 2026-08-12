@@ -1,4 +1,5 @@
 import {
+  parseDecksTodayResponse,
   parseRequestPermissionResponse,
   parseStatusResponse,
   parseSessionStartResponse,
@@ -198,6 +199,25 @@ export async function reasonixSyncStatus(input: {
     resultEnvelope(
       await reasonixCall<unknown>(
         authenticatedRequest("sync.status", input.requestId, input.token, {}),
+      ),
+    ),
+  );
+  return response.result;
+}
+
+export async function reasonixDecksToday(input: {
+  requestId: string;
+  deckId: number;
+}): Promise<ReturnType<typeof parseDecksTodayResponse>["result"]> {
+  const response = parseDecksTodayResponse(
+    resultEnvelope(
+      await reasonixCall<unknown>(
+        {
+          version: 1,
+          action: "decks.today",
+          requestId: input.requestId,
+          params: { deckId: input.deckId },
+        },
       ),
     ),
   );

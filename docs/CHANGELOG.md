@@ -5,7 +5,12 @@
 
 ## 未发布（工作区）
 
-（暂无）
+### 插件（reasonix-addon）
+- **修复三缺口（多代理审查发现）**：
+  - **bridge 超时倒挂**：`AnkiOperationBridge` 默认 timeout 10s → 12s（Anki operation 预算需 < Rust 端到端 15s，留往返余量，给大牌组 `next_item` 渲染空间）
+  - **cardKind / card.media 接线**：`anki_adapter` 新增 `_infer_card_kind`（模板名关键词，与前端 `lapisAdapter` 对齐：audio/click/word_sentence/sentence/vocabulary）与 `_collect_media`（提取 `[sound:]`/`img`/`audio src`/`url()` 本地文件名，过滤路径分隔与外链，去重保序）；`next_item` 改用两者并复用 `question`/`answer` 避免重复渲染
+  - **decks.today 实现**：插件新增 `decks.today` action（`adapter.today_counts` 用 Anki 原生 `sched.counts` 含子牌组 + `tomorrow_due`，返回 new/learning/review/tomorrowDue）；service 分发、protocol 请求/响应校验、runtime CAPABILITIES、golden fixtures（`decks-today.request/response.json`）；前端 `schemas.ts` 加 `decksTodayResponseSchema`/`parseDecksTodayResponse`、`client.ts` 加 `reasonixDecksToday`（今日首页当前仍走 `getDeckStats`，可后续切换到精确计数）
+- 测试：插件 unittest 93 → 99（新增 cardKind/media/today_counts/protocol fixture/service 分发 6 用例）；前端 schemas 测试 +1
 
 ---
 

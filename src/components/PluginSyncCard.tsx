@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { openPath } from "@tauri-apps/plugin-opener";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import {
   Alert,
   AlertDescription,
@@ -131,7 +131,7 @@ export function PluginSyncCard() {
               variant="outline"
               size="sm"
               className="rx-press w-full justify-start"
-              onClick={() => void openPath(packagePath)}
+              onClick={() => void revealItemInDir(packagePath)}
             >
               <ExternalLink className="h-3.5 w-3.5" />
               打开插件安装包所在目录

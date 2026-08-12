@@ -69,11 +69,6 @@ class FakeDecks:
     def deck_and_child_ids(self, deck_id: int):
         return [deck_id, 43]
 
-    def id(self, deck_id: int) -> int:
-        self.id_calls = getattr(self, "id_calls", [])
-        self.id_calls.append(deck_id)
-        return deck_id
-
 
 class FakeScheduler:
     def __init__(self, collection) -> None:
@@ -279,7 +274,6 @@ class AnkiSchedulerAdapterTests(unittest.TestCase):
             },
         )
         self.assertEqual(collection.sched.deck_tree_calls, [42])
-        self.assertEqual(collection.decks.id_calls, [42])
 
     def test_infer_card_kind_from_template_name(self) -> None:
         adapter_module, _collection, _adapter = self.make_adapter()

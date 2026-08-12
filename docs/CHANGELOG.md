@@ -5,6 +5,13 @@
 
 ## 未发布（工作区）
 
+### 审查修复（skill:review）
+- **blocking：`today_counts` 误用 `decks.id(deck_id)`**——Anki 25.x `DeckManager.id(name: str, create=True)` 按名字查/建，传 int 会 PyO3 TypeError 或创建垃圾牌组；改为直接 `sched.deck_due_tree(deck_id)`（接受 DeckId 位置参数），删掉误导性 `FakeDecks.id` mock（其掩盖真实 API 差异）
+- **`PluginSyncCard` 打开方式**：`openPath`（会用关联程序打开 .ankiaddon）改 `revealItemInDir`（资源管理器中定位文件，`opener:default` 已含权限）
+- **`addon:sync` 挂入 `beforeBuildCommand`**：`npm run addon:sync && npm run build`，防改 manifest 忘同步产生陈旧 bundledVersion
+- **兜底版本断言**：`test_runtime.py` 新增"兜底常量 == manifest 真源"测试，防升版后前端误报 stale；`PluginSyncCard.test.tsx` 版本断言改引用 `BUNDLED_ADDON_VERSION`
+- 测试：插件 unittest 101→102、前端 75 全绿
+
 ### 插件自托管（Bundled Addon）
 - **插件安装包内嵌软件（Tauri bundle resources）**：`tauri.conf.json` bundle.resources 加入 `reasonix-anki-addon.ankiaddon`，随 NSIS 安装包分发；Rust 新 command `addon_package_path`（`BaseDirectory::Resource` 解析安装包绝对路径）
 - **addon:sync 同步复制（Artifact Sync-on-Change）**：新增 npm script `addon:sync`（`scripts/addon-sync.mjs`）——重新打包 → 复制到 `src-tauri/resources/` → 生成 `src/lib/reasonix-addon/bundledVersion.ts`；打包脚本自检包内 manifest 版本与真源一致（防陈旧产物）

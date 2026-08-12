@@ -45,6 +45,17 @@ class AddonVersionTests(unittest.TestCase):
         # 还原后仍能读回 manifest 真源
         self.assertEqual(original(), module.ADDON_VERSION)
 
+    def test_fallback_constant_matches_the_manifest_single_source(self) -> None:
+        """兜底常量必须等于 manifest 真源，防止升版后前端误报 stale。"""
+        module = load_runtime_module()
+        # 兜底分支返回硬编码常量；此断言强制它与真源一致
+        with mock.patch(
+            "reasonix_addon.runtime.json.load",
+            side_effect=ValueError("broken manifest"),
+        ):
+            fallback = module._load_addon_version()
+        self.assertEqual(fallback, module.ADDON_VERSION)
+
 
 class FakeServer:
     def __init__(self, address, dispatcher) -> None:

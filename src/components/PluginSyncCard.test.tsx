@@ -72,7 +72,7 @@ describe("PluginSyncCard 插件版本一致性与安装引导", () => {
     expect(await screen.findByText("版本过旧")).toBeInTheDocument();
     expect(screen.getByText(/运行中 0\.0\.9/)).toBeInTheDocument();
     expect(screen.getByText(/内置安装包版本/)).toBeInTheDocument();
-    expect(screen.getByText("0.1.1")).toBeInTheDocument();
+    expect(screen.getByText(BUNDLED_ADDON_VERSION)).toBeInTheDocument();
   });
 
   it("插件未安装时显示未安装", async () => {

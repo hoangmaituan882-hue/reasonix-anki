@@ -67,17 +67,22 @@ def install(
     config = normalize_config(addon_manager.getConfig(addon_name) or {})
     authorization_mode, remembered_grant = authorization_settings(config)
 
-    def persist_permission_state(manager: PermissionManager) -> None:
+    def write_config(updated: dict[str, Any]) -> None:
+        """统一写入通道：run_on_main 内再读最新 config 合并，避免授权/会话互相覆盖。"""
         nonlocal config
-        state = manager.settings()
-        config = update_authorization(
-            config,
-            mode=state["authorizationMode"],
-            granted=bool(state["granted"]),
-        )
-        config_to_write = config
+        config = updated
         mw.taskman.run_on_main(
-            lambda: addon_manager.writeConfig(addon_name, config_to_write)
+            lambda: addon_manager.writeConfig(addon_name, updated)
+        )
+
+    def persist_permission_state(manager: PermissionManager) -> None:
+        state = manager.settings()
+        write_config(
+            update_authorization(
+                config,
+                mode=state["authorizationMode"],
+                granted=bool(state["granted"]),
+            )
         )
 
     permission_manager = PermissionManager(
@@ -122,13 +127,12 @@ def install(
         # 快照按 profileKey 隔离存储于 config["session"] 映射；空 dict = 无活动会话。
         def persist_session_snapshot(snapshot: dict[str, object]) -> None:
             nonlocal config
-            sessions = dict(config.get("session") or {})
+            # 基于最新 config 合并 session 快照（授权路径可能已更新 config）
+            latest = normalize_config(addon_manager.getConfig(addon_name) or {})
+            sessions = dict(latest.get("session") or {})
             sessions[profile_key] = snapshot
-            config_to_write = config
-            config_to_write["session"] = sessions
-            mw.taskman.run_on_main(
-                lambda: addon_manager.writeConfig(addon_name, config_to_write)
-            )
+            latest["session"] = sessions
+            write_config(latest)
 
         def load_session_snapshot() -> dict[str, object] | None:
             sessions = config.get("session")

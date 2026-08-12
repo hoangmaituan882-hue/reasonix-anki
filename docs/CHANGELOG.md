@@ -5,6 +5,11 @@
 
 ## 未发布（工作区）
 
+### 文案与提示优化
+- **studySession 错误文案用户友好化**：4 处（"Anki 尚未就绪（未打开牌组库）"、"配套插件版本过旧请重装"（隐藏技术能力名）、"学习期间配置已切换"、"状态不允许恢复请返回首页"）；保留已清晰的同步/权限文案
+- **DisconnectedScreen 补配套插件引导**：新增第 4 步（工具 → 插件 → 从文件安装 `.ankiaddon`，指向设置页引导）——首次连接用户装完 AnkiConnect 后不再卡住
+- 测试：前端 98→101（DisconnectedScreen 3 用例）；插件 107、tsc/build 通过
+
 ### 发布层审查修复（review）
 - **release 幂等性**：`buildInfo.ts` 加入 `.gitignore` 并移出 git 跟踪（BUILD_TIME 每次必变不再污染工作区，第二次 release 不再因校验中止）；`release.mjs` commit 改 `git rev-parse` 直取（不再依赖生成文件正则/静默 unknown）；非 git 环境报友好错误
 - **DiagnosticsCard**：版本不匹配区分方向（插件过旧请重装 vs 应用较旧请升级）；Profile fail 显示"未知（插件未连接）"；CheckRow 加 `role=status`（无障碍）

@@ -208,7 +208,7 @@ export function createStudySessionStore(
       try {
         const status = await api.status(requestId());
         if (!status.profileKey || status.collectionState !== "open") {
-          throw new Error("Anki 当前没有可用的 collection");
+          throw new Error("Anki 尚未就绪（未打开牌组库），请检查 Anki 窗口状态");
         }
         if (status.syncState !== "idle") {
           throw new Error("Anki 正在同步，请等待同步完成后开始学习");
@@ -218,7 +218,9 @@ export function createStudySessionStore(
           (capability) => !hasCapability(status, capability, "0.1.0"),
         );
         if (missing.length > 0) {
-          throw new Error(`Reasonix 插件缺少能力：${missing.join(", ")}`);
+          throw new Error(
+            "Reasonix 配套插件版本过旧，缺少必要能力，请在设置中重新安装",
+          );
         }
 
         const requestToken = async (): Promise<string> => {
@@ -241,7 +243,7 @@ export function createStudySessionStore(
         }
         started = { token, sessionId: session.sessionId };
         if (session.profileKey !== status.profileKey) {
-          throw new Error("启动学习时 Anki Profile 已发生变化");
+          throw new Error("学习期间 Anki 配置已切换，请重新开始");
         }
         const next = await api.next({
           requestId: requestId(),
@@ -413,7 +415,7 @@ export function createStudySessionStore(
           status.syncState !== "idle" ||
           status.profileKey !== profileKey
         ) {
-          throw new Error("Anki 当前状态不允许恢复学习会话");
+          throw new Error("Anki 状态不允许恢复，请返回今日首页重新开始");
         }
         const next = await api.next({
           requestId: requestId(),

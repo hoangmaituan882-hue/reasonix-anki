@@ -43,6 +43,16 @@ export function DisconnectedScreen({ error, onRetry }: Props) {
               <Step n={3} />
               <span>安装后重启 Anki，回到本窗口即可自动连上</span>
             </li>
+            <li className="flex gap-2">
+              <Step n={4} />
+              <span>
+                再安装 Reasonix 配套插件：工具 → 插件 → 从文件安装，选择应用内的
+                <code className="mono mx-1 rounded bg-[var(--rx-bg-soft)] px-1.5 py-0.5 text-xs">
+                  reasonix-anki-addon.ankiaddon
+                </code>
+                （右上角设置 → 插件与同步 可查看安装引导）
+              </span>
+            </li>
           </ol>
           {error ? (
             <p className="text-xs text-[var(--rx-fg-faint)]">最近错误：{error}</p>

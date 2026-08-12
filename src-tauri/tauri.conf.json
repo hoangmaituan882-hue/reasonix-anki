@@ -31,6 +31,9 @@
     "targets": ["nsis"],
     "shortDescription": "基于 AnkiConnect 的 Anki 学习工作台",
     "longDescription": "Reasonix Anki：牌组浏览、笔记编辑、自建复习流与统计概览，通过 AnkiConnect 与本地 Anki 通信。",
+    "resources": {
+      "resources/reasonix-anki-addon.ankiaddon": "reasonix-anki-addon.ankiaddon"
+    },
     "windows": {
       "nsis": {
         "installMode": "currentUser",

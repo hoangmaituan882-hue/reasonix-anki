@@ -144,7 +144,7 @@ export function TodayDashboard({
       {!addonAvailable && (
         <Alert>
           <AlertDescription>
-            Reasonix 配套插件未就绪。请保持 Anki 打开并确认插件已安装；精确学习入口不会降级到本地随机队列。
+            Reasonix 配套插件未就绪。请保持 Anki 打开并确认插件已安装；精确学习入口不会降级到本地随机队列。可点右上角设置 → 「插件与同步」查看安装引导。
           </AlertDescription>
         </Alert>
       )}

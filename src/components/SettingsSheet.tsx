@@ -24,6 +24,7 @@ import {
   cn,
 } from "@reasonix/ui";
 import { Check, Settings } from "lucide-react";
+import { PluginSyncCard } from "./PluginSyncCard";
 import {
   DIRECTIONS,
   SETTINGS_DESIGNS,
@@ -130,22 +131,8 @@ function SharedSkeletonGroups() {
           </CardContent>
         </Card>
 
-        {/* 插件与同步分组（纯骨架） */}
-        <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">插件与同步</CardTitle>
-              {PENDING_BADGE}
-            </div>
-            <CardDescription className="text-xs text-[var(--rx-fg-dim)]">
-              配套插件授权与同步行为
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <SkeletonRow />
-            <SkeletonRow />
-          </CardContent>
-        </Card>
+        {/* 插件与同步分组（真实内容：版本一致性 + 安装引导） */}
+        <PluginSyncCard />
 
         {/* 关于分组（纯骨架）：与导航项对齐 */}
         <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">

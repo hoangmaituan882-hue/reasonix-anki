@@ -5,6 +5,14 @@
 
 ## 未发布（工作区）
 
+### 插件自托管（Bundled Addon）
+- **插件安装包内嵌软件（Tauri bundle resources）**：`tauri.conf.json` bundle.resources 加入 `reasonix-anki-addon.ankiaddon`，随 NSIS 安装包分发；Rust 新 command `addon_package_path`（`BaseDirectory::Resource` 解析安装包绝对路径）
+- **addon:sync 同步复制（Artifact Sync-on-Change）**：新增 npm script `addon:sync`（`scripts/addon-sync.mjs`）——重新打包 → 复制到 `src-tauri/resources/` → 生成 `src/lib/reasonix-addon/bundledVersion.ts`；打包脚本自检包内 manifest 版本与真源一致（防陈旧产物）
+- **版本单一真源（manifest.json）**：`runtime.py` 的 `ADDON_VERSION` 改为动态读 manifest `human_version`（失败兜底 0.1.1）；`package_addon.py` 新增 `addon_version()` 校验非空
+- **前端安装引导 + Staleness Guard**：新增 `PluginSyncCard`（SettingsSheet 插件与同步组接入真实内容）——对比运行中 `status.addonVersion` vs 内置 `BUNDLED_ADDON_VERSION`，未安装/版本过旧/已就绪三态，`openPath` 打开安装包目录 + 安装步骤文案；TodayView 未就绪提示补充设置引导
+- **AGENTS.md §7.2 纪律 8**：修改插件必须递增 manifest `human_version` + `npm run addon:sync` + 登记 changelog，内嵌包不得与源码脱节
+- 测试：插件 unittest 99→101（版本真源 2 用例）、前端 vitest 72→75（PluginSyncCard 3 用例）
+
 ### 插件（reasonix-addon）
 - **修复三缺口（多代理审查发现）**：
   - **bridge 超时倒挂**：`AnkiOperationBridge` 默认 timeout 10s → 12s（Anki operation 预算需 < Rust 端到端 15s，留往返余量，给大牌组 `next_item` 渲染空间）

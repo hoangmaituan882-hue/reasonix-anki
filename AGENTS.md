@@ -395,6 +395,7 @@ npm run build          # tsc + vite 生产构建
 5. 改动后链路：`tsc` → `vite build` → （改了 Rust 则 `cargo check`）→ 窗口/HMR 实测。
 6. pip 连不上 pypi（镜像也不行）——图像处理用 ffmpeg（本机已装），别指望临时装 Python 包。
 7. **每次改动必须登记 `docs/CHANGELOG.md`**：任何代码/文档/配置/UI/插件改动，提交 git 前必须先在该文件"未发布"区追加一条记录（格式见文件头部模板），与 commit 同步；遗漏即视为未完成。
+8. **修改插件必须 `npm run addon:sync`**：改 `reasonix-addon/` 源码后，提交前必须执行 `npm run addon:sync`（重新打包 → 复制到 `src-tauri/resources/` 内嵌 → 生成 `src/lib/reasonix-addon/bundledVersion.ts`）并**递增 manifest.json 的 `human_version`**（版本单一真源）；前端据此对比运行/内置版本提示重新安装。内嵌包、`bundledVersion.ts` 与源码不得脱节，全部随 commit 提交。
 
 ---
 

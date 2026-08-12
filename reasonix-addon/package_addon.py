@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
@@ -13,6 +14,16 @@ INCLUDE_FILES = (
     SOURCE_ROOT / "manifest.json",
     SOURCE_ROOT / "config.json",
 )
+
+
+def addon_version() -> str:
+    """单一真源：从 manifest.json 读取 human_version。"""
+    manifest = SOURCE_ROOT / "manifest.json"
+    with manifest.open(encoding="utf-8") as source:
+        version = json.load(source).get("human_version")
+    if not isinstance(version, str) or not version:
+        raise ValueError("manifest.json human_version must be a non-empty string")
+    return version
 
 
 def _files_to_package() -> list[Path]:
@@ -35,7 +46,20 @@ def build_package(output: Path) -> Path:
             info.compress_type = ZIP_DEFLATED
             info.external_attr = 0o644 << 16
             archive.writestr(info, source.read_bytes())
+    _verify_bundled_manifest(output)
     return output
+
+
+def _verify_bundled_manifest(output: Path) -> None:
+    """自检：包内 manifest 的 human_version 必须等于真源（防陈旧产物）。"""
+    expected = addon_version()
+    with ZipFile(output) as archive:
+        with archive.open("manifest.json") as source:
+            bundled = json.load(source).get("human_version")
+    if bundled != expected:
+        raise ValueError(
+            f"bundled manifest human_version {bundled!r} != source {expected!r}"
+        )
 
 
 def main() -> int:
@@ -47,7 +71,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     output = build_package(args.output)
-    print(f"Built {output}")
+    print(f"Built {output} (addon version {addon_version()})")
     return 0
 
 

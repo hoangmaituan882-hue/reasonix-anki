@@ -11,7 +11,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::anki_request,
             commands::reasonix_request,
-            commands::read_media_file
+            commands::read_media_file,
+            commands::addon_package_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

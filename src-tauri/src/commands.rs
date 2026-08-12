@@ -7,6 +7,7 @@ use base64::Engine as _;
 use serde_json::Value;
 use std::sync::OnceLock;
 use std::time::Duration;
+use tauri::Manager;
 
 const ANKI_URL: &str = "http://127.0.0.1:8765";
 const REASONIX_URL: &str = "http://127.0.0.1:8766";
@@ -128,6 +129,22 @@ pub async fn read_media_file(
     let path = dir.join(&filename);
     let bytes = std::fs::read(&path).map_err(|e| format!("读取媒体失败：{e}"))?;
     Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
+}
+
+/// 返回内嵌的配套插件安装包绝对路径（tauri bundle resources）。
+/// 前端据此引导用户安装/打开所在目录；dev 模式指向 src-tauri/resources/。
+#[tauri::command]
+pub async fn addon_package_path(
+    app: tauri::AppHandle,
+) -> Result<String, String> {
+    let path = app
+        .path()
+        .resolve(
+            "reasonix-anki-addon.ankiaddon",
+            tauri::path::BaseDirectory::Resource,
+        )
+        .map_err(|e| format!("无法解析插件安装包路径：{e}"))?;
+    Ok(path.to_string_lossy().into_owned())
 }
 
 #[cfg(test)]

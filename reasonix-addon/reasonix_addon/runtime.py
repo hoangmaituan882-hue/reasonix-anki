@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from hmac import compare_digest
+from pathlib import Path
 from threading import RLock, Thread
 from time import time
 from typing import Any, Protocol
@@ -14,7 +16,26 @@ from .protocol import ProtocolValidationError, parse_request
 
 HOST = "127.0.0.1"
 PORT = 8766
-ADDON_VERSION = "0.1.1"
+
+
+def _load_addon_version() -> str:
+    """从 manifest.json 读取 human_version（单一真源）。
+
+    插件安装后 manifest 位于插件包根目录；读取失败时兜底常量，
+    保证 status.addonVersion 总有值可上报。
+    """
+    manifest = Path(__file__).resolve().parent.parent / "manifest.json"
+    try:
+        with manifest.open(encoding="utf-8") as source:
+            version = json.load(source).get("human_version")
+        if isinstance(version, str) and version:
+            return version
+    except (OSError, ValueError):
+        pass
+    return "0.1.1"
+
+
+ADDON_VERSION = _load_addon_version()
 CAPABILITIES = (
     "status",
     "requestPermission",

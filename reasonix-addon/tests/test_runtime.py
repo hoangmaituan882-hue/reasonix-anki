@@ -1,5 +1,8 @@
 import importlib
+import json
 import unittest
+from pathlib import Path
+from unittest import mock
 
 
 def load_runtime_module():
@@ -7,6 +10,40 @@ def load_runtime_module():
         return importlib.import_module("reasonix_addon.runtime")
     except ModuleNotFoundError as error:
         raise AssertionError("addon lifecycle runtime is not implemented") from error
+
+
+class AddonVersionTests(unittest.TestCase):
+    """单一真源：ADDON_VERSION 必须等于 manifest.json 的 human_version。"""
+
+    def test_loads_version_from_the_manifest_single_source(self) -> None:
+        module = load_runtime_module()
+        manifest = (
+            Path(module.__file__).resolve().parent.parent / "manifest.json"
+        )
+        with manifest.open(encoding="utf-8") as source:
+            expected = json.load(source)["human_version"]
+
+        self.assertEqual(module.ADDON_VERSION, expected)
+
+    def test_falls_back_to_constant_when_manifest_is_unreadable(self) -> None:
+        module = load_runtime_module()
+        original = module._load_addon_version
+
+        def broken_load() -> str:
+            # 模拟 manifest 解析失败（JSON 损坏/缺失字段）→ 兜底常量
+            with mock.patch(
+                "reasonix_addon.runtime.json.load",
+                side_effect=ValueError("broken manifest"),
+            ):
+                return original()
+
+        with mock.patch(
+            "reasonix_addon.runtime._load_addon_version",
+            side_effect=broken_load,
+        ):
+            self.assertEqual(module._load_addon_version(), "0.1.1")
+        # 还原后仍能读回 manifest 真源
+        self.assertEqual(original(), module.ADDON_VERSION)
 
 
 class FakeServer:

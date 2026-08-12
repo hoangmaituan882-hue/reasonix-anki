@@ -106,7 +106,11 @@ class SessionManager:
         self.persist({})  # 空快照 = 无活动会话
 
     def _resume_from_snapshot(self, deck_id: int, profile_key: str) -> bool:
-        """同 deck + 同 profile 的持久快照存在时重建会话（跨插件重启）。"""
+        """同 deck + 同 profile 的持久快照存在时重建会话（跨插件重启）。
+
+        逐项校验快照字段；任一字段非法则放弃恢复（走全新会话），
+        绝不因脏快照让 start() 抛异常。
+        """
         if self.load_snapshot is None or self._session is not None:
             return False
         try:
@@ -123,27 +127,54 @@ class SessionManager:
         session_id = snapshot.get("sessionId")
         if not isinstance(session_id, str) or not session_id:
             return False
-        history = snapshot.get("answerHistory")
+
+        # 逐项类型校验：脏值 → 放弃恢复（不崩溃、不产生坏状态）
+        try:
+            answered_cards = snapshot.get("answeredCards")
+            if answered_cards is None:
+                answered_cards = 0
+            else:
+                answered_cards = int(answered_cards)
+            if answered_cards < 0:
+                return False
+
+            started_at = snapshot.get("startedAt")
+            if started_at is None:
+                started_at = self.wall_clock()
+            else:
+                started_at = float(started_at)
+
+            last_answered = snapshot.get("lastAnsweredCardId")
+            if last_answered is not None:
+                last_answered = int(last_answered)
+                if last_answered <= 0:
+                    return False
+
+            history = snapshot.get("answerHistory")
+            answer_history: list[tuple[int, int]] = []
+            if isinstance(history, list):
+                for pair in history:
+                    if not isinstance(pair, list) or len(pair) != 2:
+                        continue  # 跳过脏条目，不整体放弃
+                    try:
+                        card_id = int(pair[0])
+                        ease = int(pair[1])
+                    except (TypeError, ValueError):
+                        continue
+                    if card_id <= 0 or ease not in (1, 2, 3, 4):
+                        continue
+                    answer_history.append((card_id, ease))
+        except (TypeError, ValueError):
+            return False
+
         self._session = _ActiveSession(
             session_id=session_id,
             deck_id=deck_id,
             profile_key=profile_key,
-            last_answered_card_id=snapshot.get("lastAnsweredCardId"),
-            answered_cards=(
-                int(snapshot["answeredCards"]) if snapshot.get("answeredCards") else 0
-            ),
-            started_at=(
-                float(snapshot["startedAt"]) if snapshot.get("startedAt") else self.wall_clock()
-            ),
-            answer_history=(
-                [
-                    (int(pair[0]), int(pair[1]))
-                    for pair in history
-                    if isinstance(pair, list) and len(pair) == 2
-                ]
-                if isinstance(history, list)
-                else []
-            ),
+            last_answered_card_id=last_answered,
+            answered_cards=answered_cards,
+            started_at=started_at,
+            answer_history=answer_history,
             # 幂等 commands 缓存不持久化：重启后旧 requestId 不命中
             commands={},
         )
@@ -476,5 +507,6 @@ class SessionManager:
             "tomorrowDue": tomorrow_due,
         }
         self._session = None
+        self._last_operation_changes = None
         self._clear_snapshot()
         return result

@@ -48,6 +48,11 @@ function remember(filename: string, url: string): string {
   return url;
 }
 
+/** 只读检查缓存中的 Blob URL（不创建）；null = 未被缓存或被淘汰 revoke */
+export function peekMediaUrl(filename: string): string | null {
+  return cache.get(filename) ?? null;
+}
+
 /** 解析媒体文件名为 Blob URL；失败返回 null（渲染侧保留占位） */
 export async function resolveMediaUrl(filename: string): Promise<string | null> {
   const hit = cache.get(filename);

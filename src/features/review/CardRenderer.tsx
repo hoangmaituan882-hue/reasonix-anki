@@ -1,7 +1,7 @@
 import DOMPurify from "dompurify";
 import { Skeleton } from "@reasonix/ui";
 import { useEffect, useMemo, useState } from "react";
-import { isLocalMediaSrc, resolveMediaUrl } from "../../lib/media";
+import { isLocalMediaSrc, peekMediaUrl, resolveMediaUrl } from "../../lib/media";
 
 /**
  * CardRenderer（技术方案 §6）：
@@ -16,6 +16,8 @@ import { isLocalMediaSrc, resolveMediaUrl } from "../../lib/media";
 interface ProcessResult {
   html: string;
   hadScripts: boolean;
+  /** 结果 HTML 引用的本地媒体文件名（用于缓存命中时校验 blob 是否仍有效） */
+  mediaNames: string[];
 }
 
 // processHtml 结果 LRU 缓存：撤销回跳/翻回同一卡时跳过整个处理链路
@@ -38,7 +40,20 @@ export async function processHtml(
 ): Promise<ProcessResult> {
   const key = processCacheKey(html, fieldValues, allowScripts);
   const cached = PROCESS_CACHE.get(key);
-  if (cached) return cached;
+  if (cached) {
+    // blob 可能已被 media LRU 淘汰 revoke：校验仍有效的才命中，否则重处理
+    const result = await cached;
+    if (
+      result.mediaNames.length === 0 ||
+      result.mediaNames.every((name) => peekMediaUrl(name) !== null)
+    ) {
+      // 真 LRU：删除 + 重插刷新迭代序
+      PROCESS_CACHE.delete(key);
+      PROCESS_CACHE.set(key, cached);
+      return result;
+    }
+    PROCESS_CACHE.delete(key); // blob 失效，重处理
+  }
   const work = (async () => {
     const hadScripts = /<script[\s>]/i.test(html);
 
@@ -110,10 +125,14 @@ export async function processHtml(
 
     if (allowScripts) {
       // 信任模式：保留脚本（等同 Anki 原生），不做 DOMPurify 消毒
-      return { html: doc.body.innerHTML, hadScripts };
+      return { html: doc.body.innerHTML, hadScripts, mediaNames: [...urlMap.keys()] };
     }
     // 安全模式收尾：剥 on* 事件属性 / javascript: URL / script（技术方案 §6 第 1 条）
-    return { html: DOMPurify.sanitize(doc.body.innerHTML), hadScripts };
+    return {
+      html: DOMPurify.sanitize(doc.body.innerHTML),
+      hadScripts,
+      mediaNames: [...urlMap.keys()],
+    };
   })();
 
   PROCESS_CACHE.set(key, work);

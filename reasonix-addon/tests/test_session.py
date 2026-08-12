@@ -440,6 +440,52 @@ class SchedulerSessionTests(unittest.TestCase):
         # persist 最后被调用一次且参数为空快照（清空标记）
         self.assertEqual(cleared[-1], {})
 
+    def test_resume_tolerates_a_corrupt_snapshot(self) -> None:
+        """脏快照（answeredCards 非法 / answerHistory 脏条目）不崩 start，走全新会话。"""
+        session = load_session_module()
+        backend = FakeSchedulerBackend(
+            [scheduler_item(101, new=2, learning=1, review=4)]
+        )
+
+        # answeredCards 非数字 → 放弃恢复
+        corrupt = {
+            "sessionId": "study-session-1",
+            "deckId": 42,
+            "profileKey": "profile-qa",
+            "answeredCards": "not-a-number",
+            "startedAt": 1000.0,
+            "answerHistory": [],
+        }
+        manager = session.SessionManager(
+            backend,
+            session_id_factory=lambda: "study-session-2",
+            persist=lambda s: None,
+            load_snapshot=lambda: corrupt,
+        )
+        started = manager.start(deck_id=42, profile_key="profile-qa")
+        # 脏快照 → 全新会话（新 sessionId），不抛异常
+        self.assertEqual(started["sessionId"], "study-session-2")
+
+        # answerHistory 脏条目被跳过，干净条目保留
+        dirty_history = {
+            "sessionId": "study-session-1",
+            "deckId": 42,
+            "profileKey": "profile-qa",
+            "answeredCards": 2,
+            "startedAt": 1000.0,
+            "answerHistory": [[101, 3], ["bad", "ease"], [202, 99]],
+        }
+        manager2 = session.SessionManager(
+            backend,
+            session_id_factory=lambda: "study-session-3",
+            persist=lambda s: None,
+            load_snapshot=lambda: dirty_history,
+        )
+        started2 = manager2.start(deck_id=42, profile_key="profile-qa")
+        self.assertEqual(started2["sessionId"], "study-session-1")  # 恢复成功
+        self.assertEqual(manager2._session.answered_cards, 2)
+        self.assertEqual(manager2._session.answer_history, [(101, 3)])  # 脏条目跳过
+
 
 if __name__ == "__main__":
     unittest.main()

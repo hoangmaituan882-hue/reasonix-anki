@@ -67,19 +67,26 @@ def install(
     config = normalize_config(addon_manager.getConfig(addon_name) or {})
     authorization_mode, remembered_grant = authorization_settings(config)
 
-    def write_config(updated: dict[str, Any]) -> None:
-        """统一写入通道：run_on_main 内再读最新 config 合并，避免授权/会话互相覆盖。"""
+    def write_config(apply: Callable[[dict[str, Any]], dict[str, Any]]) -> None:
+        """统一写入通道：读 + 合并 + 写整体在 run_on_main 内串行执行，
+        避免调用线程读、主线程写造成的授权/会话互相覆盖窗口。"""
         nonlocal config
-        config = updated
-        mw.taskman.run_on_main(
-            lambda: addon_manager.writeConfig(addon_name, updated)
-        )
+
+        def apply_and_write() -> None:
+            nonlocal config
+            latest = normalize_config(
+                addon_manager.getConfig(addon_name) or {}
+            )
+            config = apply(latest)
+            addon_manager.writeConfig(addon_name, config)
+
+        mw.taskman.run_on_main(apply_and_write)
 
     def persist_permission_state(manager: PermissionManager) -> None:
         state = manager.settings()
         write_config(
-            update_authorization(
-                config,
+            lambda latest: update_authorization(
+                latest,
                 mode=state["authorizationMode"],
                 granted=bool(state["granted"]),
             )
@@ -126,13 +133,14 @@ def install(
         # 会话快照持久化到 addon config（config 通道已存在，跨重启保留）。
         # 快照按 profileKey 隔离存储于 config["session"] 映射；空 dict = 无活动会话。
         def persist_session_snapshot(snapshot: dict[str, object]) -> None:
-            nonlocal config
-            # 基于最新 config 合并 session 快照（授权路径可能已更新 config）
-            latest = normalize_config(addon_manager.getConfig(addon_name) or {})
-            sessions = dict(latest.get("session") or {})
-            sessions[profile_key] = snapshot
-            latest["session"] = sessions
-            write_config(latest)
+            # 合并逻辑交给 write_config 在 main 线程串行执行（基于最新 config）
+            def merge(latest: dict[str, Any]) -> dict[str, Any]:
+                sessions = dict(latest.get("session") or {})
+                sessions[profile_key] = snapshot
+                latest["session"] = sessions
+                return latest
+
+            write_config(merge)
 
         def load_session_snapshot() -> dict[str, object] | None:
             sessions = config.get("session")

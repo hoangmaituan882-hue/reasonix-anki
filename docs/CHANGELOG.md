@@ -5,6 +5,13 @@
 
 ## 未发布（工作区）
 
+### 审查修复（代码质量与稳定性）
+- **快照恢复类型校验（review should-fix）**：`_resume_from_snapshot` 逐项校验（answeredCards/startedAt/lastAnsweredCardId/answerHistory 脏条目跳过），脏快照放弃恢复走全新会话，不崩 start；补坏快照容错测试
+- **entrypoint 读写单元（review should-fix）**：`write_config` 改为接收合并函数，读+合并+写在 `run_on_main` 内串行执行，消除调用线程读、主线程写的授权/会话互相覆盖窗口
+- **blob 缓存回退（review should-fix）**：`media.ts` 新增 `peekMediaUrl`；`ProcessResult` 记录 `mediaNames`；`processHtml` 缓存命中时校验 blob 仍有效（media LRU revoke 后重处理）；真 LRU（delete+set 刷新迭代序）
+- **finish 清 OpChanges（review nit）**：`finish` 清 `_last_operation_changes`（与 invalidate 一致）
+- 测试：插件 105→106（坏快照容错）、前端 78→79（blob 失效重处理）；tsc/build 通过
+
 ### 稳定性（P7）
 - **插件版本递增 0.1.1→0.1.2 + addon:sync**：P7 修复改插件代码，按纪律 8 递增 manifest human_version 并重跑 `npm run addon:sync`（重新打包 + 复制 resources 内嵌包 + 生成 bundledVersion.ts）；runtime 兜底常量同步 0.1.2（版本真源测试拦截了遗漏）
 - **跨插件重启会话持久化**：`SessionManager` 支持持久化快照（sessionId/deckId/profileKey/lastAnsweredCardId/answeredCards/answerHistory 限 500/startedAt 墙钟），按 profileKey 隔离存于 addon config `session` 映射；`start` 同 deck+profile 快照恢复（active_item=None 重取 scheduler 队首、幂等 commands 不持久化）；`answer`/`undo` 后保存、`finish`/`invalidate`/PROFILE_CHANGED 清理；`durationMs` 改墙钟避免跨重启负值；entrypoint 注入 config 读写

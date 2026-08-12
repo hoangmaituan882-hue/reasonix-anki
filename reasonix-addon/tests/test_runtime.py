@@ -41,7 +41,8 @@ class AddonVersionTests(unittest.TestCase):
             "reasonix_addon.runtime._load_addon_version",
             side_effect=broken_load,
         ):
-            self.assertEqual(module._load_addon_version(), "0.1.1")
+            # 兜底常量应等于 manifest 真源（由下方单源测试强制）
+            self.assertEqual(module._load_addon_version(), module.ADDON_VERSION)
         # 还原后仍能读回 manifest 真源
         self.assertEqual(original(), module.ADDON_VERSION)
 

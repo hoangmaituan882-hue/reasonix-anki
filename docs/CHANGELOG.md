@@ -6,6 +6,7 @@
 ## 未发布（工作区）
 
 ### 稳定性（P7）
+- **插件版本递增 0.1.1→0.1.2 + addon:sync**：P7 修复改插件代码，按纪律 8 递增 manifest human_version 并重跑 `npm run addon:sync`（重新打包 + 复制 resources 内嵌包 + 生成 bundledVersion.ts）；runtime 兜底常量同步 0.1.2（版本真源测试拦截了遗漏）
 - **跨插件重启会话持久化**：`SessionManager` 支持持久化快照（sessionId/deckId/profileKey/lastAnsweredCardId/answeredCards/answerHistory 限 500/startedAt 墙钟），按 profileKey 隔离存于 addon config `session` 映射；`start` 同 deck+profile 快照恢复（active_item=None 重取 scheduler 队首、幂等 commands 不持久化）；`answer`/`undo` 后保存、`finish`/`invalidate`/PROFILE_CHANGED 清理；`durationMs` 改墙钟避免跨重启负值；entrypoint 注入 config 读写
 - **entrypoint 配置写入竞态修复（交付检查）**：提取统一 `write_config` 通道；`persist_session_snapshot` 基于最新 `getConfig` 合并（授权与会话快照不再互相覆盖）
 - **长内容渲染性能**：`CardRenderer.processHtml` 结果模块级 LRU 缓存（键=html+allowScripts+字段值，MAX 64），撤销回跳/翻回同一卡跳过整个处理链路（两次 DOMParser + 媒体解析）；`srcDoc` useMemo 包裹；`resolveMediaUrl` 已有内部 LRU 复用

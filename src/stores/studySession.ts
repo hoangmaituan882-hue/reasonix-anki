@@ -97,7 +97,9 @@ export function createStudySessionStore(
       const monitorSync = async (): Promise<void> => {
         const syncStatus = api.syncStatus;
         if (!syncStatus) return;
-        for (let attempt = 0; attempt < 30; attempt += 1) {
+        // 45×1s 轮询窗口：插件侧 SYNC_START_TIMEOUT=30s 是"启动确认"超时，
+        // 大集合同步实际耗时更长，前端等待须显著大于插件超时（避免误报 error）。
+        for (let attempt = 0; attempt < 45; attempt += 1) {
           await new Promise<void>((resolve) => setTimeout(resolve, 1000));
           if (get().phase !== "done" || get().token !== token) return;
           try {
@@ -114,7 +116,7 @@ export function createStudySessionStore(
               return;
             }
           } catch {
-            if (attempt === 29) set({ syncState: "error" });
+            if (attempt === 44) set({ syncState: "error" });
           }
         }
         if (get().phase === "done" && get().token === token) {
@@ -416,6 +418,14 @@ export function createStudySessionStore(
           status.profileKey !== profileKey
         ) {
           throw new Error("Anki 状态不允许恢复，请返回今日首页重新开始");
+        }
+        const missing = REQUIRED_CAPABILITIES.filter(
+          (capability) => !hasCapability(status, capability, "0.1.0"),
+        );
+        if (missing.length > 0) {
+          throw new Error(
+            "Reasonix 配套插件版本过旧，缺少必要能力，请在设置中重新安装",
+          );
         }
         const next = await api.next({
           requestId: requestId(),

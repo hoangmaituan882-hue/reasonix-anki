@@ -17,6 +17,7 @@ import {
 import { ExternalLink, PackageCheck, PackageX } from "lucide-react";
 import { reasonixStatus } from "../lib/reasonix-addon/client";
 import { inTauri } from "../lib/anki/transport";
+import { versionNumber } from "../lib/reasonix-addon/capabilities";
 import { BUNDLED_ADDON_VERSION } from "../lib/reasonix-addon/bundledVersion";
 
 /**
@@ -60,6 +61,11 @@ export function PluginSyncCard() {
   const installed = addonVersion !== null;
   const stale =
     installed && addonVersion !== BUNDLED_ADDON_VERSION;
+  // 区分方向：插件旧于内置（需重装）vs 插件新于内置（应用较旧，需升级应用）
+  const addonOlder =
+    installed &&
+    versionNumber(addonVersion) >= 0 &&
+    versionNumber(addonVersion) < versionNumber(BUNDLED_ADDON_VERSION);
 
   return (
     <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
@@ -74,7 +80,7 @@ export function PluginSyncCard() {
                 : "text-2xs font-normal text-[var(--rx-accent)]"
             }
           >
-            {!installed ? "未安装" : stale ? "版本过旧" : "已就绪"}
+            {!installed ? "未安装" : stale ? (addonOlder ? "版本过旧" : "版本不一致") : "已就绪"}
           </Badge>
         </div>
         <CardDescription className="text-xs text-[var(--rx-fg-dim)]">

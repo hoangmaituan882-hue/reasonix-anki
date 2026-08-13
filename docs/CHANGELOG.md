@@ -5,6 +5,12 @@
 
 ## 未发布（工作区）
 
+### 插件审查修复（双 review）
+- **插件侧**：UNDO_MISMATCH 后回滚 bookkeeping（防 finish 把已回滚卡计入统计）；ease 校验改精确 int（排除 `True`==1 / `1.0` 混过集合成员测试）；补 2 测试（109 全绿）
+- **前端侧**：monitorSync 30×1s→45×1s（与插件 SYNC_START_TIMEOUT=30s 边界错位，大集合同步不再误报 error）；resume 复查 REQUIRED_CAPABILITIES；PluginSyncCard 版本方向区分（插件旧"版本过旧"/插件新"版本不一致"）
+- **误报澄清**：TodayView 自动同步静止分支已存在（`!["idle","error"].includes(syncState)`），加注释防误改；release.mjs 注释对齐（bump 在开发时 addon:sync 发生，release 仅同步）
+- 审查结论：插件内部无阻塞项；前后端合作其余问题为 nits（schemas 字段多于 Python 校验、undo 失败不缓存、weak_card_ids O(n²)、decks.today 无 token 注释）
+
 ### 架构纵深（稳定性）
 - **前端错误边界**：`ErrorBoundary` 全局包裹（main.tsx 渲染根，覆盖全部视图）——渲染崩溃显示友好提示 + 重载按钮 + 错误消息（供诊断），console 记录不白屏；3 测试
 - **媒体预取**：StudyView 新卡到达时对 `card.media` 并行 `resolveMediaUrl` 预热（media.ts LRU 命中，渲染/翻面零等待）；失败静默不阻塞；disposed 防护

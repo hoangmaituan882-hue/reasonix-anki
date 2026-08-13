@@ -4,7 +4,8 @@
  *
  * 步骤：
  * 1. 校验工作区干净（防止产物带未提交代码）
- * 2. npm run addon:sync（纪律 8：内嵌插件最新 + 版本自动递增）
+ * 2. npm run addon:sync（重新打包 + 复制 + 生成 bundledVersion；
+ *    版本递增在开发时已由 addon:sync 检测源码变更完成，此处仅同步）
  * 3. 生成 buildInfo.ts（版本 + commit + 构建时间）
  * 4. npm run tauri build（NSIS 安装包）
  * 5. 复制产物到 dist/release/ReasonixAnki-v{version}-{commit}/

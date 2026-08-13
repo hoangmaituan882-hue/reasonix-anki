@@ -51,6 +51,7 @@ class FakeSchedulerBackend:
         self.undo_calls = 0
         self.answer_changes = object()
         self.undo_changes = object()
+        self.undo_returns_card_id: int | None = None
         self.tomorrow_due_calls: list[int] = []
 
     def start(self, deck_id: int):
@@ -70,6 +71,12 @@ class FakeSchedulerBackend:
     def undo(self):
         self.undo_calls += 1
         self.index -= 1
+        if self.undo_returns_card_id is not None:
+            # 测试钩子：undo 后 next_item 返回指定 cardId（触发 UNDO_MISMATCH）
+            self.items[self.index] = {
+                **self.items[self.index],
+                "card": {**self.items[self.index]["card"], "cardId": self.undo_returns_card_id},
+            }
         return self.undo_changes
 
     def tomorrow_due(self, deck_id: int) -> int:
@@ -179,6 +186,49 @@ class SchedulerSessionTests(unittest.TestCase):
 
         self.assertEqual(raised.exception.code, "CARD_MISMATCH")
         self.assertEqual(backend.answer_calls, [])
+
+    def test_answer_ease_rejects_bool_and_float(self) -> None:
+        """True(==1) 与 1.0 不得混过 ease 校验（精确 int）"""
+        session, backend, manager = self.make_manager()
+        manager.next(session_id="study-session-1", profile_key="profile-qa")
+
+        for bogus in (True, 1.0, "3", 5):
+            with self.assertRaises(session.SessionError) as raised:
+                manager.answer(
+                    session_id="study-session-1",
+                    expected_card_id=101,
+                    ease=bogus,
+                    request_id=f"request-{bogus!r}",
+                    profile_key="profile-qa",
+                )
+            self.assertEqual(raised.exception.code, "INVALID_EASE")
+        self.assertEqual(backend.answer_calls, [])
+
+    def test_undo_mismatch_rolls_back_bookkeeping(self) -> None:
+        """UNDO_MISMATCH 后 bookkeeping 回滚，finish 不计已回滚的卡"""
+        session, backend, manager = self.make_manager()
+        manager.next(session_id="study-session-1", profile_key="profile-qa")
+        manager.answer(
+            session_id="study-session-1",
+            expected_card_id=101,
+            ease=3,
+            request_id="request-1",
+            profile_key="profile-qa",
+        )
+        # 让 undo 恢复到"另一张卡"触发 UNDO_MISMATCH
+        backend.undo_returns_card_id = 999
+        with self.assertRaises(session.SessionError) as raised:
+            manager.undo(
+                session_id="study-session-1",
+                request_id="undo-request-1",
+                profile_key="profile-qa",
+            )
+        self.assertEqual(raised.exception.code, "UNDO_MISMATCH")
+        # bookkeeping 已回滚：finish 报告 net=0
+        report = manager.finish(
+            session_id="study-session-1", profile_key="profile-qa"
+        )
+        self.assertEqual(report["answeredCards"], 0)
 
     def test_duplicate_answer_request_does_not_rate_twice(self) -> None:
         _, backend, manager = self.make_manager()

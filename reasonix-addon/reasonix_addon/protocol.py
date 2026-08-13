@@ -18,6 +18,15 @@ def _is_non_negative_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
+def _is_ease(value: object) -> bool:
+    """ease 必须是 int 且非 bool（排除 True==1 / 1.0 混过集合成员测试）"""
+    return (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and value in {1, 2, 3, 4}
+    )
+
+
 def _is_non_negative_number(value: object) -> bool:
     return (
         isinstance(value, (int, float))
@@ -91,7 +100,7 @@ def parse_request(value: object) -> dict[str, Any]:
             raise ProtocolValidationError(
                 "expectedCardId must be a positive integer"
             )
-        if params.get("ease") not in {1, 2, 3, 4}:
+        if not _is_ease(params.get("ease")):
             raise ProtocolValidationError("ease must be an integer from 1 to 4")
         _require_exact_params(
             params, {"sessionId", "expectedCardId", "ease"}, action
@@ -192,7 +201,7 @@ def parse_session_answer_response(value: object) -> dict[str, Any]:
     result = _parse_success_result(value)
     if not _is_positive_int(result.get("answeredCardId")):
         raise ProtocolValidationError("result.answeredCardId is invalid")
-    if result.get("ease") not in {1, 2, 3, 4}:
+    if not _is_ease(result.get("ease")):
         raise ProtocolValidationError("result.ease is invalid")
     return value
 

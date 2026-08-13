@@ -48,6 +48,8 @@ export function TodayView() {
       phase !== "idle" ||
       status.profileName === "Reasonix QA" ||
       status.collectionState !== "open" ||
+      // 静止分支：仅 idle/error 可发起；syncing/starting 期间必须静止，
+      // 否则会对 SYNC_IN_PROGRESS 重试风暴并最终被静默禁用
       !["idle", "error"].includes(status.syncState) ||
       !status.profileKey ||
       !hasCapability(status, "sync.start", "0.1.0") ||

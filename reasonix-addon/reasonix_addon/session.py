@@ -379,7 +379,7 @@ class SessionManager:
         session = self._require_session(
             session_id=session_id, profile_key=profile_key
         )
-        if ease not in {1, 2, 3, 4}:
+        if not (isinstance(ease, int) and not isinstance(ease, bool) and ease in {1, 2, 3, 4}):
             raise SessionError("INVALID_EASE", "ease must be from 1 to 4.")
         fingerprint = (session_id, expected_card_id, ease, profile_key)
         if cached := self._cached_result(
@@ -433,6 +433,11 @@ class SessionManager:
         restored = self._ensure_active_item(session)
         restored_card_id = self._card_id(restored)
         if restored_card_id != previous_card_id:
+            # Anki 已 undo 但恢复的不是预期卡：回滚本地 bookkeeping，
+            # 避免 finish() 把已回滚的卡计入统计；保守起见清空会话状态。
+            session.last_answered_card_id = None
+            session.answered_cards = 0
+            session.answer_history.clear()
             raise SessionError(
                 "UNDO_MISMATCH",
                 "Anki undo did not restore the expected card.",

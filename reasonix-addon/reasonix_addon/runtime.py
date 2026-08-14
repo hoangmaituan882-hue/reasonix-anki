@@ -32,7 +32,7 @@ def _load_addon_version() -> str:
             return version
     except (OSError, ValueError):
         pass
-    return "0.1.2"
+    return "0.1.3"
 
 
 ADDON_VERSION = _load_addon_version()

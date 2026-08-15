@@ -3,7 +3,6 @@ import { Settings as SettingsIcon } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ConnectionIndicator } from "./components/ConnectionIndicator";
 import { DisconnectedScreen } from "./components/DisconnectedScreen";
-import { SettingsSheet } from "./components/SettingsSheet";
 import { Sidebar } from "./components/Sidebar";
 import { ToasterLite } from "./components/ToasterLite";
 import { WindowControls } from "./components/WindowControls";
@@ -12,6 +11,7 @@ import { EditorView } from "./features/EditorView";
 import { NewNoteDialog } from "./features/editor/NewNoteDialog";
 import { NoteEditorSheet } from "./features/editor/NoteEditorSheet";
 import { ReviewView } from "./features/ReviewView";
+import { SettingsView } from "./features/SettingsView";
 import { StatsView } from "./features/StatsView";
 import { StudyView } from "./features/study/StudyView";
 import { TodayView } from "./features/today/TodayView";
@@ -21,13 +21,12 @@ import { applyTheme, useAppStore, viewTitle } from "./stores/app";
 import { useStudySessionStore } from "./stores/studySession";
 
 function App() {
-  const { view, direction, dark, roundedCorners } = useAppStore();
+  const { view, setView, direction, dark, roundedCorners } = useAppStore();
   const connection = useAnkiConnection();
   const studyPhase = useStudySessionStore((state) => state.phase);
   const studySessionId = useStudySessionStore((state) => state.sessionId);
   const studyDeckName = useStudySessionStore((state) => state.deckName);
   const immersiveStudy = studySessionId !== null || studyPhase === "done";
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [maximized, setMaximized] = useState(false);
 
   // 主题落盘到 <html>：data-direction + .dark（reasonix 主题约定）
@@ -89,7 +88,7 @@ function App() {
       onDoubleClick={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
-        setSettingsOpen(true);
+        setView("settings");
       }}
       aria-label="设置"
       title="设置"
@@ -114,14 +113,12 @@ function App() {
               {studyDeckName ?? "今日学习"}
             </div>
             <div className="flex items-center gap-2">
-              {settingsButton}
               <ConnectionIndicator />
               {inTauri && <WindowControls />}
             </div>
           </header>
           <main className="min-h-0 flex-1"><StudyView /></main>
           <ToasterLite />
-          <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
         </div>
       </div>
     );
@@ -151,7 +148,9 @@ function App() {
           </header>
 
           <main className="min-h-0 flex-1 overflow-y-auto">
-            {connection.status !== "connected" ? (
+            {view === "settings" ? (
+              <SettingsView />
+            ) : connection.status !== "connected" ? (
               <DisconnectedScreen
                 error={connection.error}
                 onRetry={() => void connection.refetch()}
@@ -171,7 +170,6 @@ function App() {
         <ToasterLite />
         <NoteEditorSheet />
         <NewNoteDialog />
-        <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
     </div>
   );

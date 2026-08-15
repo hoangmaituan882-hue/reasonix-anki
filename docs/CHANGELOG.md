@@ -5,6 +5,13 @@
 
 ## 未发布（工作区）
 
+### 设置页移植（v1 SettingsView 引入，移除 SettingsSheet 抽屉）
+- **基础设施**：移植 `stores/settings.ts`（`ra.settings.v1` 持久化 + updateSetting(s)/resetToDefaults）、`SettingsControls.tsx`（Checkbox/CheckboxGroup/ToggleRow）、`Slider.tsx`、`lib/window.ts`（openSettingsWindow 跨窗口）、`lib/ease.ts`；补 `motion`/`tailwind-merge` 依赖
+- **设置页本体**：移植 `features/SettingsView.tsx`（连接/外观/复习/统计/星系/数据 6 tab）；热力图预览构件（HEATMAP_THEMES/FluidWaveWaterLines + rx-wave CSS）抽取到 `features/settings/heatmapPreview.tsx`（不动主项目 StatsView）
+- **入口**：App 齿轮按钮与 Sidebar「系统设置」导航项 → `setView("settings")` 渲染 SettingsView（不依赖 Anki 连接）；沉浸学习态移除齿轮；`main.tsx` 支持 `?view=settings` 独立窗口（SettingsWindowLayout）；独立窗口按钮在 standalone 时隐藏
+- **清理**：删除 `SettingsSheet.tsx`/`SettingsSheet.test.tsx`；`stores/app.ts` 删 SettingsDesign/SETTINGS_DESIGNS/settingsDesign（`ra.settingsDesign` 键不再读取）；app.test 同步清理；新增 SettingsView 冒烟测试
+- 验证：tsc 零错误；前端 24 文件 / 97 测试全绿；vite build 成功
+
 ### 插件审查修复（双 review）
 - **插件侧**：UNDO_MISMATCH 后回滚 bookkeeping（防 finish 把已回滚卡计入统计）；ease 校验改精确 int（排除 `True`==1 / `1.0` 混过集合成员测试）；补 2 测试（109 全绿）
 - **前端侧**：monitorSync 30×1s→45×1s（与插件 SYNC_START_TIMEOUT=30s 边界错位，大集合同步不再误报 error）；resume 复查 REQUIRED_CAPABILITIES；PluginSyncCard 版本方向区分（插件旧"版本过旧"/插件新"版本不一致"）

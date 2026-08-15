@@ -7,6 +7,7 @@ import {
   Palette,
   PanelLeftClose,
   PanelLeftOpen,
+  Settings,
   SquarePen,
   Sun,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const NAV_ITEMS: { id: View; label: string; icon: typeof Library }[] = [
   { id: "editor", label: "笔记编辑", icon: SquarePen },
   { id: "review", label: "复习", icon: GraduationCap },
   { id: "stats", label: "统计概览", icon: BarChart3 },
+  { id: "settings", label: "系统设置", icon: Settings },
 ];
 
 /**

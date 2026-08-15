@@ -33,3 +33,61 @@ body {
     0 2px 6px -2px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(255, 255, 255, 0.1);
 }
+
+/* ===== 设置页热力图预览（从 v1 Ainox 移植，rx-wave 动画） ===== */
+@keyframes rx-wave-flow {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes rx-wave-flow-reverse {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.rx-wave-crest {
+  animation: rx-wave-flow var(--wave-speed, 3s) linear infinite;
+  will-change: transform;
+}
+
+.rx-wave-crest-back {
+  animation: rx-wave-flow-reverse calc(var(--wave-speed, 3s) * 1.35) linear infinite;
+  will-change: transform;
+}
+
+.rx-wave-fast {
+  --wave-speed: 1.8s;
+}
+
+.rx-wave-slow {
+  --wave-speed: 4.5s;
+}
+
+/* 经典方格模式：波浪式渐进揭示 (Wave-like Reveal) 动画 */
+@keyframes rx-wave-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.25) translateY(6px);
+  }
+  60% {
+    opacity: 0.95;
+    transform: scale(1.1) translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.rx-classic-cell-reveal {
+  animation: rx-wave-reveal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}

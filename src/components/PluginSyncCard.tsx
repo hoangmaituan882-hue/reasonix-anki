@@ -71,33 +71,33 @@ export function PluginSyncCard() {
     <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm">插件与同步</CardTitle>
+          <CardTitle className="text-body-nm font-bold">插件与同步</CardTitle>
           <Badge
             variant={installed && !stale ? "outline" : "default"}
             className={
               installed && !stale
-                ? "text-2xs font-normal text-[var(--rx-fg-dim)]"
-                : "text-2xs font-normal text-[var(--rx-accent)]"
+                ? "text-badge-xs font-normal text-[var(--rx-fg-dim)]"
+                : "text-badge-xs font-normal text-[var(--rx-accent)]"
             }
           >
             {!installed ? "未安装" : stale ? (addonOlder ? "版本过旧" : "版本不一致") : "已就绪"}
           </Badge>
         </div>
-        <CardDescription className="text-xs text-[var(--rx-fg-dim)]">
+        <CardDescription className="text-body-sm text-[var(--rx-fg-dim)]">
           配套插件负责精确学习调度；Anki 内"工具 → 插件 → 从文件安装"
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {statusError && (
           <Alert>
-            <AlertTitle className="text-xs">{statusError}</AlertTitle>
-            <AlertDescription className="text-2xs">
+            <AlertTitle className="text-body-sm font-semibold">{statusError}</AlertTitle>
+            <AlertDescription className="text-caption-xs">
               请确认 Anki 已打开且插件已安装
             </AlertDescription>
           </Alert>
         )}
 
-        <div className="space-y-1.5 text-xs">
+        <div className="space-y-1.5 text-body-sm">
           <div className="flex items-center justify-between">
             <span className="text-[var(--rx-fg-dim)]">运行中版本</span>
             <span className="font-medium">
@@ -112,18 +112,18 @@ export function PluginSyncCard() {
 
         {stale && (
           <Alert>
-            <AlertTitle className="flex items-center gap-1.5 text-xs">
+            <AlertTitle className="flex items-center gap-1.5 text-body-sm font-semibold">
               <PackageX className="h-3.5 w-3.5" aria-hidden />
               插件版本过旧
             </AlertTitle>
-            <AlertDescription className="text-2xs">
+            <AlertDescription className="text-caption-xs">
               运行中 {addonVersion} ≠ 内置 {BUNDLED_ADDON_VERSION}。
               请重新安装最新安装包，避免功能缺失或数据不一致。
             </AlertDescription>
           </Alert>
         )}
         {installed && !stale && (
-          <div className="flex items-center gap-1.5 text-2xs text-[var(--rx-fg-dim)]">
+          <div className="flex items-center gap-1.5 text-caption-xs text-[var(--rx-fg-dim)]">
             <PackageCheck className="h-3.5 w-3.5" aria-hidden />
             插件版本与内置安装包一致
           </div>
@@ -136,14 +136,14 @@ export function PluginSyncCard() {
             <Button
               variant="outline"
               size="sm"
-              className="rx-press w-full justify-start"
+              className="rx-press w-full justify-start text-body-sm font-medium"
               onClick={() => void revealItemInDir(packagePath)}
             >
               <ExternalLink className="h-3.5 w-3.5" />
               打开插件安装包所在目录
             </Button>
           )}
-          <p className="text-2xs text-[var(--rx-fg-faint)]">
+          <p className="text-caption-xs text-[var(--rx-fg-faint)]">
             安装步骤：打开上方的目录 → 在 Anki「工具 → 插件 → 从文件安装」
             选择 reasonix-anki-addon.ankiaddon → 重启 Anki
           </p>

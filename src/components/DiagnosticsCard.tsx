@@ -41,7 +41,7 @@ function CheckRow({
   return (
     <div
       role="status"
-      className="flex items-center justify-between gap-3 py-1.5 text-xs"
+      className="flex items-center justify-between gap-3 py-1.5 text-body-sm"
     >
       <span className="flex items-center gap-2 text-[var(--rx-fg-dim)]">
         {icon}
@@ -106,8 +106,8 @@ export function DiagnosticsCard() {
   return (
     <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm">连接诊断</CardTitle>
-        <CardDescription className="text-xs text-[var(--rx-fg-dim)]">
+        <CardTitle className="text-body-nm font-bold">连接诊断</CardTitle>
+        <CardDescription className="text-body-sm text-[var(--rx-fg-dim)]">
           逐项检查 Anki 与配套插件状态，用于排查连接问题
         </CardDescription>
       </CardHeader>
@@ -148,8 +148,8 @@ export function DiagnosticsCard() {
           }
         />
         <div className="flex items-center justify-between pt-2">
-          <span className="text-2xs text-[var(--rx-fg-faint)]">内置插件版本</span>
-          <Badge variant="outline" className="text-2xs font-normal text-[var(--rx-fg-dim)]">
+          <span className="text-caption-xs text-[var(--rx-fg-faint)]">内置插件版本</span>
+          <Badge variant="outline" className="text-badge-xs font-normal text-[var(--rx-fg-dim)]">
             v{BUNDLED_ADDON_VERSION}
           </Badge>
         </div>

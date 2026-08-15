@@ -5,6 +5,10 @@
 
 ## 未发布（工作区）
 
+### 插件设置排版适配（对齐设置弹窗字号字重）
+- **PluginSyncCard / DiagnosticsCard / AboutCard** 排版对齐 AppSettingsModal 弹窗规范：CardTitle `text-sm`→`text-body-nm font-bold`；描述 `text-xs`→`text-body-sm`；内容行 `text-xs`→`text-body-sm`；辅助文本/徽章 `text-2xs`→`text-caption-xs`/`text-badge-xs`；Alert 标题加 `font-semibold`
+- 验证：tsc 零错误；前端 26 文件 / 101 测试全绿；vite build 成功
+
 ### 设置弹窗（AppSettingsModal）+ v2 设置功能回归
 - **弹窗移植**：`components/AppSettingsModal.tsx`（2186 行）从 v1 移植，HEATMAP_THEMES import 改指向 `features/settings/heatmapPreview`
 - **双入口**：侧边栏「系统设置」点击 → 打开设置弹窗（v1 默认形态）；hover 显示 ExternalLink 按钮 → 独立设置窗口（v2 已有）；App.tsx 挂载 `<AppSettingsModal />`

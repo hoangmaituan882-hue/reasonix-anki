@@ -12,6 +12,7 @@ import {
 } from "@reasonix/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useCardSearch, useDeckConfigs, useDeckTree } from "../lib/anki/query";
+import { useAppStore } from "../stores/app";
 import { CardTable } from "./browse/CardTable";
 import { DeckTree } from "./browse/DeckTree";
 import { NotePreview } from "./browse/NotePreview";
@@ -35,6 +36,17 @@ export function BrowseView() {
   const [appliedSearch, setAppliedSearch] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+
+  // 统计热力图「在浏览中检索」：注入外部查询后清空（只消费一次）
+  const browseQuery = useAppStore((s) => s.browseQuery);
+  const setBrowseQuery = useAppStore((s) => s.setBrowseQuery);
+  useEffect(() => {
+    if (browseQuery != null) {
+      setSearchInput(browseQuery);
+      setAppliedSearch(browseQuery);
+      setBrowseQuery(null);
+    }
+  }, [browseQuery, setBrowseQuery]);
 
   // 空输入 → 当前牌组范围；有输入 → 原生 Anki 搜索语法
   const query = appliedSearch?.trim()

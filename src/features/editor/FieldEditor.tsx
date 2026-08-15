@@ -1,9 +1,14 @@
 import DOMPurify from "dompurify";
-import { Eye, EyeOff } from "lucide-react";
-import { Button, Label, Textarea } from "@reasonix/ui";
+import { Code2, Eye } from "lucide-react";
+import { Label, Textarea } from "@reasonix/ui";
 import { useRef, useState, type ClipboardEvent } from "react";
 import { anki } from "../../lib/anki/actions";
 import { toastError } from "../../components/ToasterLite";
+import {
+  MotionTabs,
+  MotionTabsList,
+  MotionTabsTrigger,
+} from "../../components/MotionTabs";
 
 function fileToBase64(file: File): Promise<string> {
   return file.arrayBuffer().then((buf) => {
@@ -27,7 +32,7 @@ interface Props {
  */
 export function FieldEditor({ label, value, onChange, rows = 5 }: Props) {
   const ref = useRef<HTMLTextAreaElement | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [uploading, setUploading] = useState(false);
 
   const handlePaste = async (e: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -68,35 +73,49 @@ export function FieldEditor({ label, value, onChange, rows = 5 }: Props) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <Label className="text-xs">{label}</Label>
+        <Label className="text-xs font-semibold">{label}</Label>
         <div className="flex items-center gap-2">
           {uploading && (
             <span className="text-2xs text-[var(--rx-fg-faint)]">上传中…</span>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-1.5 text-2xs rx-press"
-            onClick={() => setShowPreview((p) => !p)}
+          <MotionTabs
+            value={mode}
+            onValueChange={(v) => setMode(v as "edit" | "preview")}
+            variant="segment"
           >
-            {showPreview ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-            {showPreview ? "源码" : "预览"}
-          </Button>
+            <MotionTabsList className="p-0.5 bg-[var(--rx-bg-soft)] rounded-[var(--rx-r-m)] border border-[var(--rx-border-soft)]">
+              <MotionTabsTrigger
+                value="edit"
+                className="h-6 px-2 text-2xs gap-1"
+              >
+                <Code2 className="h-3 w-3" />
+                <span>源码</span>
+              </MotionTabsTrigger>
+              <MotionTabsTrigger
+                value="preview"
+                className="h-6 px-2 text-2xs gap-1"
+              >
+                <Eye className="h-3 w-3" />
+                <span>预览</span>
+              </MotionTabsTrigger>
+            </MotionTabsList>
+          </MotionTabs>
         </div>
       </div>
-      <Textarea
-        ref={ref}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onPaste={handlePaste}
-        rows={rows}
-        className="mono text-xs leading-relaxed"
-        placeholder="支持 HTML；截图可直接粘贴上传"
-      />
-      {showPreview && (
+      {mode === "edit" ? (
+        <Textarea
+          ref={ref}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onPaste={handlePaste}
+          rows={rows}
+          className="mono text-xs leading-relaxed"
+          placeholder="支持 HTML；截图可直接粘贴上传"
+        />
+      ) : (
         <div
-          className="max-h-56 overflow-y-auto rounded-[var(--rx-r-m)] border border-[var(--rx-border-soft)] bg-[var(--rx-bg-soft)] p-3 text-sm"
-          dangerouslySetInnerHTML={{ __html: sanitized }}
+          className="min-h-[100px] max-h-56 overflow-y-auto rounded-[var(--rx-r-m)] border border-[var(--rx-border-soft)] bg-[var(--rx-bg-soft)] p-3 text-sm"
+          dangerouslySetInnerHTML={{ __html: sanitized || "<span class='text-[var(--rx-fg-faint)] italic'>（无内容预览）</span>" }}
         />
       )}
     </div>

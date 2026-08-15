@@ -7,36 +7,38 @@
  */
 import { useState } from "react";
 import {
-  Plug,
-  Palette,
-  GraduationCap,
-  Orbit,
-  HardDrive,
-  RefreshCw,
-  RotateCw,
-  CheckCircle2,
-  AlertCircle,
-  RotateCcw,
-  Code2,
-  Sliders,
-  Sparkles,
-  Key,
-  Save,
-  Trash2,
-  Sun,
-  Moon,
   ExternalLink,
+  Code2,
   Cpu,
   Database,
   Layers,
   ShieldCheck,
   Activity,
-  Puzzle,
   Copy,
-  TrendingUp,
   Waves,
   Droplets,
+  Key,
+  Trash2,
+  Puzzle,
 } from "lucide-react";
+import {
+  AnimatedAlertCircle,
+  AnimatedCheckCircle2,
+  AnimatedGraduationCap,
+  AnimatedHardDrive,
+  AnimatedMoon,
+  AnimatedOrbit,
+  AnimatedPalette,
+  AnimatedPlug,
+  AnimatedRefreshCw,
+  AnimatedRotateCcw,
+  AnimatedRotateCw,
+  AnimatedSave,
+  AnimatedSliders,
+  AnimatedSparkles,
+  AnimatedSun,
+  AnimatedTrendingUp,
+} from "../components/icons/animated";
 import {
   Badge,
   Button,
@@ -176,7 +178,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
         <div>
           <h1 className="heading-xl flex items-center gap-2.5">
             <span className="p-2 rounded-2xl bg-[var(--rx-accent)] text-[var(--rx-accent-fg)] shadow-xs">
-              <Sliders className="h-5 w-5" />
+              <AnimatedSliders size={20} />
             </span>
             <span>系统设置</span>
           </h1>
@@ -205,7 +207,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
             onClick={handleResetAll}
             className="text-body-sm font-bold gap-1.5 text-[var(--rx-fg-dim)] hover:text-rose-500 rx-press"
           >
-            <RotateCcw className="h-4 w-4" />
+            <AnimatedRotateCcw size={16} />
             恢复默认
           </Button>
         </div>
@@ -218,7 +220,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
           <TabButton
             active={activeTab === "connection"}
             onClick={() => setActiveTab("connection")}
-            icon={<Plug className="h-4 w-4" />}
+            icon={AnimatedPlug}
             title="连接与服务"
             description="AnkiConnect / 端口 / 同步"
             badge={
@@ -232,35 +234,35 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
           <TabButton
             active={activeTab === "appearance"}
             onClick={() => setActiveTab("appearance")}
-            icon={<Palette className="h-4 w-4" />}
+            icon={AnimatedPalette}
             title="外观与色彩"
             description="6 大主题 / 暗黑模式 / 缩放"
           />
           <TabButton
             active={activeTab === "review"}
             onClick={() => setActiveTab("review")}
-            icon={<GraduationCap className="h-4 w-4" />}
+            icon={AnimatedGraduationCap}
             title="复习与调度"
             description="队列上限 / 音频自播 / 脚本"
           />
           <TabButton
             active={activeTab === "stats"}
             onClick={() => setActiveTab("stats")}
-            icon={<TrendingUp className="h-4 w-4" />}
+            icon={AnimatedTrendingUp}
             title="统计与热力"
             description="8 大流体主题 / 注水波浪 / 满水基准"
           />
           <TabButton
             active={activeTab === "galaxy"}
             onClick={() => setActiveTab("galaxy")}
-            icon={<Orbit className="h-4 w-4" />}
+            icon={AnimatedOrbit}
             title="知识星系"
             description="3D 渲染 / 留存率 / 光晕"
           />
           <TabButton
             active={activeTab === "data"}
             onClick={() => setActiveTab("data")}
-            icon={<HardDrive className="h-4 w-4" />}
+            icon={AnimatedHardDrive}
             title="存储与关于"
             description="缓存清理 / 环境信息 / 协议"
           />
@@ -288,9 +290,9 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                         )}
                       >
                         {connection.status === "connected" ? (
-                          <CheckCircle2 className="h-6 w-6" />
+                          <AnimatedCheckCircle2 size={24} />
                         ) : (
-                          <AlertCircle className="h-6 w-6" />
+                          <AnimatedAlertCircle size={24} />
                         )}
                       </div>
                       <div>
@@ -323,7 +325,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                       onClick={handleTestConnection}
                       className="text-body-sm font-bold gap-1.5 rx-press"
                     >
-                      <RefreshCw className={cn("h-4 w-4", testingConnection && "animate-spin")} />
+                      <AnimatedRefreshCw size={16} trigger={testingConnection} className={cn(testingConnection && "animate-spin")} />
                       测试连通
                     </Button>
                   </div>
@@ -338,9 +340,9 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                       )}
                     >
                       {testResult.success ? (
-                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        <AnimatedCheckCircle2 size={16} />
                       ) : (
-                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <AnimatedAlertCircle size={16} />
                       )}
                       <span>{testResult.message}</span>
                     </div>
@@ -403,7 +405,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                       onClick={handleSaveConnection}
                       className="text-body-sm font-bold gap-1.5 rx-press"
                     >
-                      <Save className="h-4 w-4" />
+                      <AnimatedSave size={16} />
                       保存连接配置
                     </Button>
                   </div>
@@ -429,7 +431,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                     onClick={handleSyncAnkiWeb}
                     className="text-body-sm font-bold gap-1.5 rx-press"
                   >
-                    <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
+                    <AnimatedRefreshCw size={16} trigger={syncing} className={cn(syncing && "animate-spin")} />
                     {syncing ? "正在同步..." : "同步至 AnkiWeb"}
                   </Button>
                 </div>
@@ -462,7 +464,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                         <div className="flex items-center justify-between w-full mb-2">
                           <span className="text-body-sm font-bold">{d.label}</span>
                           {isSelected && (
-                            <CheckCircle2 className="h-4 w-4 text-[var(--rx-accent)]" />
+                            <AnimatedCheckCircle2 size={16} />
                           )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -511,7 +513,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                     )}
                   >
                     <div className="p-2.5 rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
-                      <Sun className="h-5 w-5" />
+                      <AnimatedSun size={20} />
                     </div>
                     <div>
                       <div className="text-body-sm font-bold">浅色明亮模式</div>
@@ -532,7 +534,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                     )}
                   >
                     <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
-                      <Moon className="h-5 w-5" />
+                      <AnimatedMoon size={20} />
                     </div>
                     <div>
                       <div className="text-body-sm font-bold">深色夜览模式</div>
@@ -802,7 +804,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                         </div>
                       </div>
                       {settings.heatmapStyle !== "classic" && (
-                        <CheckCircle2 className="h-5 w-5 text-[var(--rx-accent)]" />
+                        <AnimatedCheckCircle2 size={20} />
                       )}
                     </div>
                     <div className="w-full flex items-center gap-1.5 mt-2 p-2 rounded-xl bg-[var(--rx-bg-soft)]/60 border border-[var(--rx-border-soft)]">
@@ -845,7 +847,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                         </div>
                       </div>
                       {settings.heatmapStyle === "classic" && (
-                        <CheckCircle2 className="h-5 w-5 text-[var(--rx-accent)]" />
+                        <AnimatedCheckCircle2 size={20} />
                       )}
                     </div>
                     <div className="w-full flex items-center gap-1.5 mt-2 p-2 rounded-xl bg-[var(--rx-bg-soft)]/60 border border-[var(--rx-border-soft)]">
@@ -895,7 +897,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                             <span className="text-body-sm font-bold">{theme.name}</span>
                           </div>
                           {isSelected && (
-                            <CheckCircle2 className="h-4 w-4 text-[var(--rx-accent)]" />
+                            <AnimatedCheckCircle2 size={16} />
                           )}
                         </div>
                         {/* 5 阶色带 */}
@@ -1170,7 +1172,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
                           onClick={() => setWavePreviewKey((k) => k + 1)}
                           className="gap-1.5 text-caption-xs font-bold rx-press"
                         >
-                          <RotateCw className="h-3.5 w-3.5" />
+                          <AnimatedRotateCw size={14} trigger={wavePreviewKey} />
                           重放波浪揭示
                         </Button>
                       </div>
@@ -1498,7 +1500,7 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
 
                       <div className="p-2.5 rounded-lg bg-[var(--rx-bg-soft)]/50 border border-[var(--rx-border-soft)] space-y-0.5">
                         <div className="flex items-center gap-1 text-caption-xs font-bold text-[var(--rx-fg)]">
-                          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                          <AnimatedSparkles size={14} className="text-amber-500" />
                           <span>设计系统</span>
                         </div>
                         <div className="text-caption-xs text-[var(--rx-fg-faint)] font-mono">
@@ -1616,22 +1618,30 @@ export function SettingsView({ standalone = false }: SettingsViewProps) {
 function TabButton({
   active,
   onClick,
-  icon,
+  icon: Icon,
   title,
   description,
   badge,
 }: {
   active: boolean;
   onClick: () => void;
-  icon: React.ReactNode;
+  icon: React.ComponentType<any>;
   title: string;
   description: string;
   badge?: React.ReactNode;
 }) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        setClicked((c) => c + 1);
+        onClick();
+      }}
       className={cn(
         "w-full flex items-center justify-between p-3.5 rounded-xl text-left transition-all rx-press",
         active
@@ -1640,8 +1650,8 @@ function TabButton({
       )}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <span className={cn(active ? "text-[var(--rx-accent-fg)]" : "text-[var(--rx-fg)]")}>
-          {icon}
+        <span className={cn("shrink-0", active ? "text-[var(--rx-accent-fg)]" : "text-[var(--rx-fg)]")}>
+          <Icon size={16} isHovered={hovered} trigger={clicked} />
         </span>
         <div className="min-w-0">
           <div className="text-body-sm font-bold truncate">{title}</div>

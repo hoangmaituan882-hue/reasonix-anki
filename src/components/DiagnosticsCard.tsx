@@ -8,7 +8,11 @@ import {
   CardTitle,
   cn,
 } from "@reasonix/ui";
-import { CircleCheck, CircleX, Loader2 } from "lucide-react";
+import {
+  AnimatedAlertCircle,
+  AnimatedCheckCircle2,
+  AnimatedRotateCw,
+} from "./icons/animated";
 import { anki } from "../lib/anki/actions";
 import { reasonixStatus } from "../lib/reasonix-addon/client";
 import { versionNumber } from "../lib/reasonix-addon/capabilities";
@@ -27,11 +31,11 @@ function CheckRow({
 }) {
   const icon =
     state === "checking" ? (
-      <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+      <AnimatedRotateCw size={14} trigger className="animate-spin motion-reduce:animate-none" />
     ) : state === "ok" ? (
-      <CircleCheck className="h-3.5 w-3.5 text-[var(--rx-accent)]" />
+      <AnimatedCheckCircle2 size={14} className="text-[var(--rx-accent)]" />
     ) : (
-      <CircleX className="h-3.5 w-3.5 text-[var(--rx-danger)]" />
+      <AnimatedAlertCircle size={14} className="text-[var(--rx-danger)]" />
     );
   const color =
     state === "ok"

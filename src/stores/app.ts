@@ -45,12 +45,15 @@ interface AppState {
   roundedCorners: boolean;
   /** 右侧背词助手面板开关（沉浸助手） */
   rightPanelOpen: boolean;
+  /** 统计热力图「在浏览中检索」：切换到浏览视图时注入的初始查询 */
+  browseQuery: string | null;
   setView: (view: View) => void;
   setDirection: (direction: Direction) => void;
   toggleDark: () => void;
   toggleSidebar: () => void;
   setRoundedCorners: (enabled: boolean) => void;
   toggleRightPanel: () => void;
+  setBrowseQuery: (query: string | null) => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -69,6 +72,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   sidebarCollapsed: load<boolean>("ra.sidebarCollapsed", false),
   roundedCorners: load<boolean>("ra.roundedCorners", true),
   rightPanelOpen: load<boolean>("ra.rightPanelOpen", true),
+  browseQuery: null,
 
   setView: (view) => set({ view }),
 
@@ -99,6 +103,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
     localStorage.setItem("ra.rightPanelOpen", JSON.stringify(rightPanelOpen));
     set({ rightPanelOpen });
   },
+
+  setBrowseQuery: (browseQuery) => set({ browseQuery }),
 }));
 
 /** 把主题状态同步到 <html>（data-direction + .dark） */

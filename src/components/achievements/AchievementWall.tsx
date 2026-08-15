@@ -10,6 +10,11 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@reasonix/ui";
+import {
+  MotionTabs,
+  MotionTabsList,
+  MotionTabsTrigger,
+} from "../MotionTabs";
 import { AchievementBadge, AchievementCategory } from "./types";
 import {
   loadAchievementsFromStorage,
@@ -245,40 +250,42 @@ export function AchievementWall({
       {/* Filter & Search Navigation Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-[var(--rx-bg-elev)] p-2 border border-[var(--rx-border-soft)] rounded-xl shadow-2xs">
         {/* Category Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-          {CATEGORIES_META.map((cat, cIdx) => {
-            const Icon = cat.icon;
-            const isActive = activeCategory === cat.id;
-            const count =
-              cat.id === "all"
-                ? badges.length
-                : badges.filter((b) => b.category === cat.id).length;
+        <MotionTabs
+          value={activeCategory}
+          onValueChange={(v) => setActiveCategory(v as AchievementCategory)}
+          variant="pill"
+          className="overflow-x-auto no-scrollbar py-0.5"
+        >
+          <MotionTabsList className="bg-transparent border-0 p-0 gap-1">
+            {CATEGORIES_META.map((cat, cIdx) => {
+              const Icon = cat.icon;
+              const isActive = activeCategory === cat.id;
+              const count =
+                cat.id === "all"
+                  ? badges.length
+                  : badges.filter((b) => b.category === cat.id).length;
 
-            return (
-              <button
-                key={`badge_cat_${cat.id}_${cIdx}`}
-                onClick={() => setActiveCategory(cat.id)}
-                className={cn(
-                  "px-2 py-1 rounded-lg text-[13px] font-medium transition-all flex items-center gap-1 shrink-0 cursor-pointer",
-                  isActive
-                    ? "bg-[var(--rx-accent)] text-white font-bold shadow-2xs"
-                    : "text-[var(--rx-fg-dim)] hover:text-[var(--rx-fg)] hover:bg-[var(--rx-sidebar-hover)]"
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{cat.label}</span>
-                <span
-                  className={cn(
-                    "px-1 py-0.2 text-[11px] rounded font-mono",
-                    isActive ? "bg-white/20 text-white" : "bg-[var(--rx-bg-soft)]"
-                  )}
+              return (
+                <MotionTabsTrigger
+                  key={`badge_cat_${cat.id}_${cIdx}`}
+                  value={cat.id}
+                  className="px-2.5 py-1 text-[12px] gap-1.5"
                 >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{cat.label}</span>
+                  <span
+                    className={cn(
+                      "px-1 py-0.2 text-[10px] rounded-full font-mono transition-colors",
+                      isActive ? "bg-white/20 text-white" : "bg-[var(--rx-bg-soft)] text-[var(--rx-fg-dim)]"
+                    )}
+                  >
+                    {count}
+                  </span>
+                </MotionTabsTrigger>
+              );
+            })}
+          </MotionTabsList>
+        </MotionTabs>
 
         {/* Search input */}
         {!compact && (

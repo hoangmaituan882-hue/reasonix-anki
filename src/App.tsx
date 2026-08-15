@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "motion/react";
-import { CloudSun, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@reasonix/ui";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { AnimatedCloudSun, AnimatedSettings } from "./components/icons/animated";
 import { ConnectionIndicator } from "./components/ConnectionIndicator";
 import { DisconnectedScreen } from "./components/DisconnectedScreen";
 import { Sidebar } from "./components/Sidebar";
@@ -23,6 +23,69 @@ import { useAnkiConnection } from "./lib/anki/useConnection";
 import { inTauri } from "./lib/anki/transport";
 import { applyTheme, useAppStore, viewTitle } from "./stores/app";
 import { useStudySessionStore } from "./stores/studySession";
+
+function HeaderSettingsButton({ onClick }: { onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+
+  return (
+    <button
+      type="button"
+      onMouseDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={(e) => {
+        e.stopPropagation();
+        setClicked((c) => c + 1);
+        onClick();
+      }}
+      aria-label="设置"
+      title="设置"
+      className="rx-press flex h-6 w-6 items-center justify-center rounded-[var(--rx-r-m)] text-[var(--rx-fg-dim)] transition-colors hover:bg-[var(--rx-sidebar-hover)] hover:text-[var(--rx-fg)]"
+    >
+      <AnimatedSettings size={16} isHovered={hovered} trigger={clicked} />
+    </button>
+  );
+}
+
+function HeaderCompanionButton({
+  active,
+  onClick,
+}: {
+  active: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+
+  return (
+    <button
+      type="button"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        setClicked((c) => c + 1);
+        onClick();
+      }}
+      className={cn(
+        "flex items-center gap-1.5 rounded-[var(--rx-r-m)] px-2.5 py-1 text-xs font-bold transition-all border border-transparent active:scale-95 rx-press",
+        active
+          ? "bg-[#DF9D6A]/10 text-[#C9844F] dark:bg-[#C9844F]/20 dark:text-[#EAE4DC] border-[#DF9D6A]/20"
+          : "text-[var(--rx-fg-dim)]",
+      )}
+      title={active ? "隐藏背词助手" : "开启背词助手"}
+    >
+      <AnimatedCloudSun
+        size={16}
+        isHovered={hovered}
+        trigger={clicked}
+        className="text-[#DF9D6A] shrink-0"
+      />
+      <span className="hidden sm:inline">沉浸助手</span>
+    </button>
+  );
+}
 
 function App() {
   const { view, setView, direction, dark, roundedCorners, rightPanelOpen, toggleRightPanel } =
@@ -85,24 +148,6 @@ function App() {
   // 最大化时为 0
   const windowInset = maximized ? "p-0" : "p-3";
 
-  // 设置齿轮按钮（header 右侧，可拖拽区 stopPropagation 防误触拖拽）
-  const settingsButton = (
-    <button
-      type="button"
-      onMouseDown={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => e.stopPropagation()}
-      onClick={(e) => {
-        e.stopPropagation();
-        setView("settings");
-      }}
-      aria-label="设置"
-      title="设置"
-      className="rx-press flex h-6 w-6 items-center justify-center rounded-[var(--rx-r-m)] text-[var(--rx-fg-dim)] transition-colors hover:bg-[var(--rx-sidebar-hover)] hover:text-[var(--rx-fg)]"
-    >
-      <SettingsIcon className="h-4 w-4" />
-    </button>
-  );
-
   if (immersiveStudy) {
     return (
       <div className={`h-screen ${windowInset}`}>
@@ -147,24 +192,12 @@ function App() {
             <h1 className="text-sm font-semibold">{viewTitle(view)}</h1>
             <div className="flex items-center gap-2">
               {connection.status === "connected" && (
-                <button
-                  type="button"
+                <HeaderCompanionButton
+                  active={rightPanelOpen}
                   onClick={toggleRightPanel}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-[var(--rx-r-m)] px-2.5 py-1 text-xs font-bold transition-all border border-transparent active:scale-95 rx-press",
-                    rightPanelOpen
-                      ? "bg-[#DF9D6A]/10 text-[#C9844F] dark:bg-[#C9844F]/20 dark:text-[#EAE4DC] border-[#DF9D6A]/20"
-                      : "text-[var(--rx-fg-dim)]",
-                  )}
-                  title={rightPanelOpen ? "隐藏背词助手" : "开启背词助手"}
-                >
-                  <CloudSun
-                    className={cn("h-4 w-4 text-[#DF9D6A]", rightPanelOpen && "animate-pulse")}
-                  />
-                  <span className="hidden sm:inline">沉浸助手</span>
-                </button>
+                />
               )}
-              {settingsButton}
+              <HeaderSettingsButton onClick={() => setView("settings")} />
               <ConnectionIndicator />
               {inTauri && <WindowControls />}
             </div>

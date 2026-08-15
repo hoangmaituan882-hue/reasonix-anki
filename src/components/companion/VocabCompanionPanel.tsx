@@ -45,6 +45,11 @@ import {
   HelpCircle,
   LayoutGrid,
 } from "lucide-react";
+import {
+  MotionTabs,
+  MotionTabsList,
+  MotionTabsTrigger,
+} from "../MotionTabs";
 import { ADHDVocabArcade } from "./game/ADHDVocabArcade";
 import { DesktopWidgetsDialog, GlassWeatherWidget, MeetingReminderWidget } from "../widgets";
 import { AchievementWall, AchievementWallDialog } from "../achievements";
@@ -849,38 +854,32 @@ export function VocabCompanionPanel({ onClose }: VocabCompanionPanelProps) {
     >
       {/* Top Header & Tab Switcher */}
       <div className="flex items-center justify-between px-3 pt-3.5 pb-2 border-b border-[var(--rx-border-soft)] bg-[var(--rx-sidebar)]">
-        <div className="flex-1 mr-2 flex items-center gap-1 bg-[var(--rx-bg-soft)] p-1 rounded-[var(--rx-r-m)] border border-[var(--rx-border-soft)] transition-all">
-          {tabSettings
-            .filter((tab) => tab.visible)
-            .map((tab, idx) => {
-              const meta = ALL_TABS_META[tab.id];
-              if (!meta) return null;
-              const Icon = meta.icon;
-              const isSelected = activeTab === tab.id;
-              return (
-                <button
-                  key={`top_tab_${tab.id}_${idx}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "relative flex-1 flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md transition-all select-none",
-                    isSelected
-                      ? "text-[var(--rx-fg)] font-semibold"
-                      : "text-[var(--rx-fg-dim)] hover:text-[var(--rx-fg)]"
-                  )}
-                >
-                  {isSelected && (
-                    <motion.div
-                      layoutId="activeTabPill"
-                      className="absolute inset-0 bg-[var(--rx-bg-elev)] rounded-md shadow-sm border border-[var(--rx-border-soft)]"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <Icon className="h-3.5 w-3.5 relative z-10 shrink-0" />
-                  <span className="relative z-10 truncate">{meta.label}</span>
-                </button>
-              );
-            })}
-        </div>
+        <MotionTabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as TabType)}
+          variant="segment"
+          className="flex-1 mr-2 min-w-0"
+        >
+          <MotionTabsList className="w-full p-0.5 bg-[var(--rx-bg-soft)] rounded-[var(--rx-r-m)] border border-[var(--rx-border-soft)]">
+            {tabSettings
+              .filter((tab) => tab.visible)
+              .map((tab, idx) => {
+                const meta = ALL_TABS_META[tab.id];
+                if (!meta) return null;
+                const Icon = meta.icon;
+                return (
+                  <MotionTabsTrigger
+                    key={`top_tab_${tab.id}_${idx}`}
+                    value={tab.id}
+                    className="flex-1 px-2 py-1 text-[11px] gap-1.5"
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{meta.label}</span>
+                  </MotionTabsTrigger>
+                );
+              })}
+          </MotionTabsList>
+        </MotionTabs>
 
         <div className="flex items-center gap-1 shrink-0">
           <button

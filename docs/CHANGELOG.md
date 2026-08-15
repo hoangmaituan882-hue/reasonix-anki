@@ -5,6 +5,13 @@
 
 ## 未发布（工作区）
 
+### v1 学习统计与记忆热力图完整接入
+- **StatsView 升级**（382→1388 行）：接入 v1 完整记忆热力图——DayStatsDetailDialog（日明细弹窗：Again/Hard/Good/Easy 分布 + 用时）、HeatmapCell（液态注水/经典方格双风格 + 波浪揭示动画 + 主题色 + hover 详情）、Heatmap 主组件（周范围 13/26/52 切换 + 月份标记 + 连胜/峰值指标 + 8 主题选择器 + 满额目标调整 + 日期数字开关）
+- **数据层**：`lib/db/stats.ts` 补 `getDailyDetail`/`DailyDetailRow`（deck_daily 表日明细聚合，全局/单牌组双口径）
+- **跳转链路**：`stores/app.ts` 补 `browseQuery`/`setBrowseQuery`；BrowseView 消费（热力图「在浏览中检索」→ 切到浏览视图并注入查询，消费一次后清空）
+- **存量修复**：`components/icons/animated/useIconAnimation.ts` 的 motion v12 类型错误（AnimationControls 改用 `ReturnType<typeof useAnimation>`）——此前随移植带入从未通过 tsc
+- 验证：tsc 零错误；前端 28 文件 / 105 测试全绿；vite build 成功
+
 ### 黑体失效根因修复 + 插件与同步 tab 排版重构
 - **根因修复（层叠）**：上一轮移植的排版工具类（`.heading-*`/`.text-body-*`）未包 `@layer`，未分层样式优先级高于 Tailwind v4 `@layer utilities`，`.text-body-sm{font-weight:500}` 把同元素 `font-bold(700)` 全部压掉——全站黑体失效。修复：工具类包进 `@layer components`（Tailwind v4 层序 theme<base<components<utilities，700 恢复覆盖 500）；产物验证 `heading-2xl` 前为 `@layer components{`
 - **插件 tab 排版重构**（三卡片）：CardTitle 升 `text-[18px] font-bold` 区块标题规格；状态 Badge 去 `font-normal`（恢复 `text-badge-xs` 自带 700）；版本数值 `font-medium`→`font-bold`；诊断状态值加 `font-semibold`；Alert 标题与安装按钮升 `font-bold`

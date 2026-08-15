@@ -165,3 +165,42 @@ export async function rebuildDeck(deckId: number, deckName: string): Promise<voi
   await d.execute("DELETE FROM watermark WHERE deck_id = ?", [deckId]);
   await syncDeck(deckId, deckName);
 }
+
+export interface DailyDetailRow {
+  date: string;
+  reviews: number;
+  time_ms: number;
+  again: number;
+  hard: number;
+  good: number;
+  easy: number;
+}
+
+/** 读取某牌组或全局指定日期的详细评分指标（Again/Hard/Good/Easy） */
+export async function getDailyDetail(
+  date: string,
+  deckId?: number,
+): Promise<DailyDetailRow | null> {
+  const d = await db();
+  if (deckId != null) {
+    const rows = await d.select<DailyDetailRow[]>(
+      "SELECT date, reviews, time_ms, again, hard, good, easy FROM deck_daily WHERE deck_id = ? AND date = ?",
+      [deckId, date],
+    );
+    return rows[0] ?? null;
+  }
+  const rows = await d.select<DailyDetailRow[]>(
+    `SELECT date,
+            SUM(reviews) as reviews,
+            SUM(time_ms) as time_ms,
+            SUM(again) as again,
+            SUM(hard) as hard,
+            SUM(good) as good,
+            SUM(easy) as easy
+     FROM deck_daily
+     WHERE date = ?
+     GROUP BY date`,
+    [date],
+  );
+  return rows[0] ?? null;
+}

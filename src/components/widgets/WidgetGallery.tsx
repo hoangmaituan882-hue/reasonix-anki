@@ -14,6 +14,11 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button, cn } from "@reasonix/ui";
+import {
+  MotionTabs,
+  MotionTabsList,
+  MotionTabsTrigger,
+} from "../MotionTabs";
 import { Widget } from "./types";
 import { REGISTERED_WIDGETS } from "./widgetRegistry";
 import { WIDGET_CATEGORIES } from "./widgetsData";
@@ -140,39 +145,42 @@ export function WidgetGallery({
           {/* Filter & Search Bar */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-6 py-3 border-b border-[var(--rx-border-soft)] bg-[var(--rx-bg-elev)]">
             {/* Category Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-              {WIDGET_CATEGORIES.map((cat, cIdx) => {
-                const count =
-                  cat.id === "all"
-                    ? REGISTERED_WIDGETS.length
-                    : REGISTERED_WIDGETS.filter((w) => w.category === cat.id).length;
+            <MotionTabs
+              value={selectedCategory}
+              onValueChange={(v) => setSelectedCategory(v)}
+              variant="pill"
+              className="overflow-x-auto no-scrollbar pb-1 sm:pb-0"
+            >
+              <MotionTabsList className="bg-transparent border-0 p-0 gap-1.5">
+                {WIDGET_CATEGORIES.map((cat, cIdx) => {
+                  const count =
+                    cat.id === "all"
+                      ? REGISTERED_WIDGETS.length
+                      : REGISTERED_WIDGETS.filter((w) => w.category === cat.id).length;
+                  const isSelected = selectedCategory === cat.id;
 
-                return (
-                  <button
-                    key={`widget_cat_${cat.id}_${cIdx}`}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-xl text-caption-text font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer",
-                      selectedCategory === cat.id
-                        ? "bg-[var(--rx-accent)] text-[var(--rx-accent-fg)] shadow-xs"
-                        : "bg-[var(--rx-bg-soft)] text-[var(--rx-fg-dim)] hover:text-[var(--rx-fg)] hover:bg-[var(--rx-sidebar-hover)]"
-                    )}
-                  >
-                    <span>{cat.label}</span>
-                    <span
-                      className={cn(
-                        "text-[10px] px-1.5 py-0.2 rounded-full font-mono",
-                        selectedCategory === cat.id
-                          ? "bg-black/20 text-white"
-                          : "bg-[var(--rx-bg-elev)] text-[var(--rx-fg-dim)]"
-                      )}
+                  return (
+                    <MotionTabsTrigger
+                      key={`widget_cat_${cat.id}_${cIdx}`}
+                      value={cat.id}
+                      className="px-3 py-1.5 text-caption-text font-semibold gap-1.5"
                     >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                      <span>{cat.label}</span>
+                      <span
+                        className={cn(
+                          "text-[10px] px-1.5 py-0.2 rounded-full font-mono transition-colors",
+                          isSelected
+                            ? "bg-black/20 text-white"
+                            : "bg-[var(--rx-bg-soft)] text-[var(--rx-fg-dim)]"
+                        )}
+                      >
+                        {count}
+                      </span>
+                    </MotionTabsTrigger>
+                  );
+                })}
+              </MotionTabsList>
+            </MotionTabs>
 
             {/* Search Input */}
             <div className="relative w-full sm:w-64 shrink-0">

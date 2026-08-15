@@ -1,17 +1,20 @@
+import { useState } from "react";
 import {
-  BarChart3,
-  CalendarDays,
   ExternalLink,
-  GraduationCap,
-  Library,
-  Moon,
   Palette,
   PanelLeftClose,
   PanelLeftOpen,
-  Settings,
-  SquarePen,
-  Sun,
 } from "lucide-react";
+import {
+  AnimatedBarChart3,
+  AnimatedCalendarDays,
+  AnimatedGraduationCap,
+  AnimatedLibrary,
+  AnimatedMoon,
+  AnimatedSettings,
+  AnimatedSquarePen,
+  AnimatedSun,
+} from "./icons/animated";
 import {
   Button,
   Select,
@@ -30,27 +33,155 @@ import { DIRECTIONS, useAppStore, type Direction, type View } from "../stores/ap
 import { useSettingsStore } from "../stores/settings";
 import { openSettingsWindow } from "../lib/window";
 
-const NAV_ITEMS: { id: View; label: string; icon: typeof Library }[] = [
-  { id: "today", label: "今日学习", icon: CalendarDays },
-  { id: "browse", label: "牌组浏览", icon: Library },
-  { id: "editor", label: "笔记编辑", icon: SquarePen },
-  { id: "review", label: "复习", icon: GraduationCap },
-  { id: "stats", label: "统计概览", icon: BarChart3 },
-  { id: "settings", label: "系统设置", icon: Settings },
+const NAV_ITEMS = [
+  { id: "today" as View, label: "今日学习", icon: AnimatedCalendarDays },
+  { id: "browse" as View, label: "牌组浏览", icon: AnimatedLibrary },
+  { id: "editor" as View, label: "笔记编辑", icon: AnimatedSquarePen },
+  { id: "review" as View, label: "复习", icon: AnimatedGraduationCap },
+  { id: "stats" as View, label: "统计概览", icon: AnimatedBarChart3 },
+  { id: "settings" as View, label: "系统设置", icon: AnimatedSettings },
 ];
+
+function NavItemButton({
+  label,
+  icon: Icon,
+  active,
+  collapsed,
+  onClick,
+  extra,
+}: {
+  id: View;
+  label: string;
+  icon: React.ComponentType<any>;
+  active: boolean;
+  collapsed: boolean;
+  onClick: () => void;
+  extra?: React.ReactNode;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+
+  const button = (
+    <button
+      type="button"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        setClickCount((c: number) => c + 1);
+        onClick();
+      }}
+      aria-current={active ? "page" : undefined}
+      aria-label={collapsed ? label : undefined}
+      className={cn(
+        "rx-press group/navbtn flex w-full items-center rounded-[var(--rx-r-m)] px-3 py-2 text-sm transition-colors",
+        collapsed ? "gap-0" : "gap-2.5",
+        active
+          ? "font-medium rx-accent-soft"
+          : "text-[var(--rx-fg-dim)] hover:bg-[var(--rx-sidebar-hover)]",
+      )}
+      style={active ? { color: "var(--rx-accent)" } : undefined}
+    >
+      <Icon size={16} isHovered={hovered} trigger={clickCount} className="shrink-0" />
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-left transition-opacity duration-[var(--rx-dur-base)] motion-reduce:transition-none",
+          collapsed && "opacity-0",
+        )}
+        aria-hidden={collapsed}
+      >
+        {label}
+      </span>
+    </button>
+  );
+
+  if (extra) {
+    return (
+      <div className="group/navitem relative flex w-full items-center">
+        {button}
+        {extra}
+      </div>
+    );
+  }
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="right" className="text-xs">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return button;
+}
+
+function ThemeToggle({
+  dark,
+  collapsed,
+  toggleDark,
+}: {
+  dark: boolean;
+  collapsed: boolean;
+  toggleDark: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+
+  const handleClick = () => {
+    setClickCount((c: number) => c + 1);
+    toggleDark();
+  };
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rx-press"
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            onClick={handleClick}
+            aria-label={dark ? "切换到浅色" : "切换到深色"}
+          >
+            {dark ? (
+              <AnimatedSun size={14} isHovered={hovered} trigger={clickCount} />
+            ) : (
+              <AnimatedMoon size={14} isHovered={hovered} trigger={clickCount} />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="text-xs">
+          {dark ? "切换到浅色" : "切换到深色"}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="w-full justify-start rx-press"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={handleClick}
+    >
+      {dark ? (
+        <AnimatedSun size={14} isHovered={hovered} trigger={clickCount} />
+      ) : (
+        <AnimatedMoon size={14} isHovered={hovered} trigger={clickCount} />
+      )}
+      {dark ? "切换到浅色" : "切换到深色"}
+    </Button>
+  );
+}
 
 /**
  * 悬浮面板式侧边栏（Floating Panel）。
- *
- * 整块侧边栏是一张悬浮圆角卡片：与窗口左/上/下边缘留 12px 间隙（m-3），
- * 圆角走 --rx-r-l，边框 --rx-border-soft，底色 --rx-sidebar 与画布
- * --rx-bg 形成层级；不再使用贴边 border-r 条状面板。
- *
- * 收缩动画纪律（沿用 v0.1 验证过的几何）：
- * - 宽度 w-52 ↔ w-14 走 --rx-dur-slow + --rx-ease 过渡；
- * - 展开/收缩两态图标列位置不变（按钮 px-3 恒定），文字只淡出（opacity
- *   走 --rx-dur-base）不位移；
- * - prefers-reduced-motion 全部降级为无动画。
  */
 export function Sidebar() {
   const {
@@ -64,6 +195,8 @@ export function Sidebar() {
     toggleSidebar,
   } = useAppStore();
   const openSettingsModal = useSettingsStore((s) => s.openSettingsModal);
+  const [brandHovered, setBrandHovered] = useState(false);
+  const [brandClicked, setBrandClicked] = useState(0);
 
   const cycleDirection = () => {
     const idx = DIRECTIONS.findIndex((d) => d.id === direction);
@@ -86,8 +219,11 @@ export function Sidebar() {
       >
         {/* 品牌区：图标列与导航图标列对齐（展开态统一 20px = px-5），文字淡出 */}
         <div
+          onMouseEnter={() => setBrandHovered(true)}
+          onMouseLeave={() => setBrandHovered(false)}
+          onClick={() => setBrandClicked((c: number) => c + 1)}
           className={cn(
-            "flex items-center gap-2 pt-4 pb-3",
+            "flex items-center gap-2 pt-4 pb-3 cursor-pointer select-none",
             collapsed ? "justify-center px-2" : "px-5",
           )}
         >
@@ -96,7 +232,7 @@ export function Sidebar() {
             style={{ color: "var(--rx-accent-fg)" }}
             aria-hidden
           >
-            <GraduationCap className="h-4 w-4" />
+            <AnimatedGraduationCap size={16} isHovered={brandHovered} trigger={brandClicked} />
           </span>
           <div
             className={cn(
@@ -120,12 +256,32 @@ export function Sidebar() {
           className="flex-1 space-y-0.5 overflow-y-auto p-2"
           aria-label="主导航"
         >
-          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+          {NAV_ITEMS.map(({ id, label, icon }) => {
             const active = view === id;
-            const button = (
-              <button
+            const isSettings = id === "settings";
+            const extra =
+              isSettings && !collapsed ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void openSettingsWindow();
+                  }}
+                  title="在独立窗口中打开设置"
+                  className="absolute right-2 opacity-0 group-hover/navitem:opacity-100 hover:text-[var(--rx-accent)] text-[var(--rx-fg-faint)] p-1 rounded-md hover:bg-[var(--rx-bg-elev)] transition-all"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </button>
+              ) : undefined;
+
+            return (
+              <NavItemButton
                 key={id}
-                type="button"
+                id={id}
+                label={label}
+                icon={icon}
+                active={active}
+                collapsed={collapsed}
                 onClick={() => {
                   if (id === "settings") {
                     openSettingsModal();
@@ -133,57 +289,8 @@ export function Sidebar() {
                     setView(id);
                   }
                 }}
-                aria-current={active ? "page" : undefined}
-                aria-label={collapsed ? label : undefined}
-                className={cn(
-                  "rx-press flex w-full items-center rounded-[var(--rx-r-m)] px-3 py-2 text-sm transition-colors",
-                  collapsed ? "gap-0" : "gap-2.5",
-                  active
-                    ? "font-medium rx-accent-soft"
-                    : "text-[var(--rx-fg-dim)] hover:bg-[var(--rx-sidebar-hover)]",
-                )}
-                style={active ? { color: "var(--rx-accent)" } : undefined}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span
-                  className={cn(
-                    "min-w-0 flex-1 truncate text-left transition-opacity duration-[var(--rx-dur-base)] motion-reduce:transition-none",
-                    collapsed && "opacity-0",
-                  )}
-                  aria-hidden={collapsed}
-                >
-                  {label}
-                </span>
-              </button>
-            );
-            if (id === "settings" && !collapsed) {
-              return (
-                <div key={id} className="group/navitem relative flex w-full items-center">
-                  {button}
-                  {/* 系统设置项专属：独立窗口快捷图标 */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void openSettingsWindow();
-                    }}
-                    title="在独立窗口中打开设置"
-                    className="absolute right-2 opacity-0 group-hover/navitem:opacity-100 hover:text-[var(--rx-accent)] text-[var(--rx-fg-faint)] p-1 rounded-md hover:bg-[var(--rx-bg-elev)] transition-all"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              );
-            }
-            return collapsed ? (
-              <Tooltip key={id}>
-                <TooltipTrigger asChild>{button}</TooltipTrigger>
-                <TooltipContent side="right" className="text-xs">
-                  {label}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              button
+                extra={extra}
+              />
             );
           })}
         </nav>
@@ -213,26 +320,7 @@ export function Sidebar() {
                   主题方向：{currentDirectionLabel}（点击切换）
                 </TooltipContent>
               </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 rx-press"
-                    onClick={toggleDark}
-                    aria-label={dark ? "切换到浅色" : "切换到深色"}
-                  >
-                    {dark ? (
-                      <Sun className="h-3.5 w-3.5" />
-                    ) : (
-                      <Moon className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs">
-                  {dark ? "切换到浅色" : "切换到深色"}
-                </TooltipContent>
-              </Tooltip>
+              <ThemeToggle dark={dark} collapsed={collapsed} toggleDark={toggleDark} />
             </div>
           ) : (
             <>
@@ -255,19 +343,7 @@ export function Sidebar() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start rx-press"
-                onClick={toggleDark}
-              >
-                {dark ? (
-                  <Sun className="h-3.5 w-3.5" />
-                ) : (
-                  <Moon className="h-3.5 w-3.5" />
-                )}
-                {dark ? "切换到浅色" : "切换到深色"}
-              </Button>
+              <ThemeToggle dark={dark} collapsed={collapsed} toggleDark={toggleDark} />
             </>
           )}
         </div>

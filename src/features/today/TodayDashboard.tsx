@@ -2,6 +2,7 @@
  * 今日首页仪表盘 UI（props 驱动，从 TodayView.tsx 拆出）。
  * 数据编排仍在 TodayView；本组件只负责呈现。
  */
+import { useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -11,16 +12,15 @@ import {
   CardContent,
   cn,
 } from "@reasonix/ui";
+import { Check, PlugZap } from "lucide-react";
 import {
-  ArrowRight,
-  BookOpen,
-  Brain,
-  Check,
-  Clock3,
-  PlugZap,
-  RotateCw,
-  Sparkles,
-} from "lucide-react";
+  AnimatedArrowRight,
+  AnimatedBookOpen,
+  AnimatedBrain,
+  AnimatedClock,
+  AnimatedRotateCw,
+  AnimatedSparkles,
+} from "../../components/icons/animated";
 import { dueCount, summarizeTodayDecks, type TodayDeckRow } from "./todayUtil";
 
 export interface TodayDashboardProps {
@@ -32,6 +32,135 @@ export interface TodayDashboardProps {
   error?: string | null;
   onSelect(deckId: number): void;
   onStart(deckId: number, deckName: string): void;
+}
+
+function OverviewMetricCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ComponentType<any>;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+
+  return (
+    <Card
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => setClicked((c) => c + 1)}
+      className="group cursor-pointer select-none border-[var(--rx-border-soft)] bg-[var(--rx-bg-elev)] transition-colors hover:border-[var(--rx-border)]"
+    >
+      <CardContent className="flex items-center justify-between p-4">
+        <div>
+          <div className="text-2xs text-[var(--rx-fg-faint)]">{label}</div>
+          <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
+        </div>
+        <span className="flex h-9 w-9 items-center justify-center rounded-[var(--rx-r-m)] rx-accent-soft transition-transform group-hover:scale-105">
+          <Icon size={16} isHovered={hovered} trigger={clicked} className="text-[var(--rx-accent)]" />
+        </span>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DeckItemRow({
+  deck,
+  selected,
+  onSelect,
+}: {
+  deck: TodayDeckRow;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+
+  return (
+    <button
+      type="button"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        setClicked((c) => c + 1);
+        onSelect();
+      }}
+      aria-label={`${deck.name}，新词 ${deck.newCount}，学习中 ${deck.learningCount}，到期复习 ${deck.reviewCount}`}
+      aria-pressed={selected}
+      className={cn(
+        "rx-press flex w-full items-center gap-4 rounded-[var(--rx-r-m)] border px-4 py-3 text-left transition-colors",
+        selected
+          ? "border-[var(--rx-accent)] bg-[var(--rx-accent-soft)]"
+          : "border-[var(--rx-border-soft)] bg-[var(--rx-bg-elev)] hover:border-[var(--rx-border)]",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--rx-r-m)]",
+          selected ? "rx-accent-soft" : "bg-[var(--rx-bg-soft)]",
+        )}
+      >
+        {selected ? (
+          <Check className="h-4 w-4 text-[var(--rx-accent)]" />
+        ) : (
+          <AnimatedBookOpen
+            size={16}
+            isHovered={hovered}
+            trigger={clicked}
+            className="text-[var(--rx-fg-faint)]"
+          />
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium">{deck.name}</span>
+        <span className="mt-1 flex flex-wrap gap-2 text-2xs text-[var(--rx-fg-faint)]">
+          <span>新 {deck.newCount}</span>
+          <span>学 {deck.learningCount}</span>
+          <span>复 {deck.reviewCount}</span>
+          <span>共 {deck.totalCount}</span>
+        </span>
+      </span>
+      <span className="text-sm font-semibold tabular-nums text-[var(--rx-fg-dim)]">
+        {dueCount(deck)}
+      </span>
+    </button>
+  );
+}
+
+function StartStudyButton({
+  disabled,
+  starting,
+  onClick,
+}: {
+  disabled: boolean;
+  starting: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+
+  return (
+    <Button
+      className="w-full rx-press"
+      disabled={disabled}
+      aria-label="开始学习"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        setClicked((c) => c + 1);
+        onClick();
+      }}
+    >
+      {starting ? (
+        <AnimatedRotateCw size={16} trigger className="animate-spin motion-reduce:animate-none" />
+      ) : (
+        <AnimatedArrowRight size={16} isHovered={hovered} trigger={clicked} />
+      )}
+      {starting ? "正在连接 Anki" : "开始学习"}
+    </Button>
+  );
 }
 
 export function TodayDashboard({
@@ -70,7 +199,7 @@ export function TodayDashboard({
             )}
           >
             {syncState === "syncing" ? (
-              <RotateCw className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+              <AnimatedRotateCw size={14} trigger className="animate-spin motion-reduce:animate-none" />
             ) : (
               <PlugZap className="h-3.5 w-3.5" />
             )}
@@ -80,24 +209,10 @@ export function TodayDashboard({
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="今日概览">
-        {[
-          { label: "新词", value: totals.newCount, icon: Sparkles },
-          { label: "学习中", value: totals.learningCount, icon: Brain },
-          { label: "到期复习", value: totals.reviewCount, icon: BookOpen },
-          { label: "预计用时", value: `${estimatedMinutes} 分`, icon: Clock3 },
-        ].map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="border-[var(--rx-border-soft)] bg-[var(--rx-bg-elev)]">
-            <CardContent className="flex items-center justify-between p-4">
-              <div>
-                <div className="text-2xs text-[var(--rx-fg-faint)]">{label}</div>
-                <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
-              </div>
-              <span className="flex h-9 w-9 items-center justify-center rounded-[var(--rx-r-m)] rx-accent-soft">
-                <Icon className="h-4 w-4 text-[var(--rx-accent)]" />
-              </span>
-            </CardContent>
-          </Card>
-        ))}
+        <OverviewMetricCard label="新词" value={totals.newCount} icon={AnimatedSparkles} />
+        <OverviewMetricCard label="学习中" value={totals.learningCount} icon={AnimatedBrain} />
+        <OverviewMetricCard label="到期复习" value={totals.reviewCount} icon={AnimatedBookOpen} />
+        <OverviewMetricCard label="预计用时" value={`${estimatedMinutes} 分`} icon={AnimatedClock} />
       </section>
 
       {error && (
@@ -119,49 +234,14 @@ export function TodayDashboard({
             <h3 className="text-sm font-semibold">选择牌组</h3>
             <span className="text-2xs text-[var(--rx-fg-faint)]">{decks.length} 个牌组</span>
           </div>
-          {decks.map((deck) => {
-            const selectedRow = deck.id === selectedDeckId;
-            return (
-              <button
-                key={deck.id}
-                type="button"
-                aria-label={`${deck.name}，新词 ${deck.newCount}，学习中 ${deck.learningCount}，到期复习 ${deck.reviewCount}`}
-                aria-pressed={selectedRow}
-                onClick={() => onSelect(deck.id)}
-                className={cn(
-                  "rx-press flex w-full items-center gap-4 rounded-[var(--rx-r-m)] border px-4 py-3 text-left transition-colors",
-                  selectedRow
-                    ? "border-[var(--rx-accent)] bg-[var(--rx-accent-soft)]"
-                    : "border-[var(--rx-border-soft)] bg-[var(--rx-bg-elev)] hover:border-[var(--rx-border)]",
-                )}
-              >
-                <span
-                  className={cn(
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--rx-r-m)]",
-                    selectedRow ? "rx-accent-soft" : "bg-[var(--rx-bg-soft)]",
-                  )}
-                >
-                  {selectedRow ? (
-                    <Check className="h-4 w-4 text-[var(--rx-accent)]" />
-                  ) : (
-                    <BookOpen className="h-4 w-4 text-[var(--rx-fg-faint)]" />
-                  )}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{deck.name}</span>
-                  <span className="mt-1 flex flex-wrap gap-2 text-2xs text-[var(--rx-fg-faint)]">
-                    <span>新 {deck.newCount}</span>
-                    <span>学 {deck.learningCount}</span>
-                    <span>复 {deck.reviewCount}</span>
-                    <span>共 {deck.totalCount}</span>
-                  </span>
-                </span>
-                <span className="text-sm font-semibold tabular-nums text-[var(--rx-fg-dim)]">
-                  {dueCount(deck)}
-                </span>
-              </button>
-            );
-          })}
+          {decks.map((deck) => (
+            <DeckItemRow
+              key={deck.id}
+              deck={deck}
+              selected={deck.id === selectedDeckId}
+              onSelect={() => onSelect(deck.id)}
+            />
+          ))}
           {decks.length === 0 && (
             <div className="rounded-[var(--rx-r-m)] border border-dashed border-[var(--rx-border)] py-12 text-center text-sm text-[var(--rx-fg-faint)]">
               Anki 中暂无可显示的牌组
@@ -197,15 +277,11 @@ export function TodayDashboard({
                 从左侧选择今天要学习的牌组。
               </p>
             )}
-            <Button
-              className="w-full rx-press"
+            <StartStudyButton
               disabled={!selected || !addonAvailable || starting || dueCount(selected) === 0}
-              aria-label="开始学习"
+              starting={starting}
               onClick={() => selected && onStart(selected.id, selected.name)}
-            >
-              {starting ? <RotateCw className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : <ArrowRight className="h-4 w-4" />}
-              {starting ? "正在连接 Anki" : "开始学习"}
-            </Button>
+            />
           </CardContent>
         </Card>
       </section>

@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   BookOpen,
-  CheckCircle2,
   ChevronDown,
-  Eye,
   Headphones,
   LogOut,
-  RotateCw,
   Timer,
-  Undo2,
-  Volume2,
 } from "lucide-react";
+import {
+  AnimatedCheckCircle2,
+  AnimatedEye,
+  AnimatedRotateCw,
+  AnimatedUndo2,
+  AnimatedVolume2,
+} from "../../components/icons/animated";
 import { Alert, AlertDescription, Badge, Button } from "@reasonix/ui";
 import type { JapaneseWordRecord } from "../vocabulary/lapisAdapter";
 import { MappingWizard } from "../vocabulary/MappingWizard";
@@ -84,6 +86,82 @@ function FrontPrompt({ word }: { word: JapaneseWordRecord }) {
   );
 }
 
+function ReplayButton({ onReplay }: { onReplay: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="重播音频"
+      title="重播音频"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        setClicked((c) => c + 1);
+        onReplay();
+      }}
+    >
+      <AnimatedVolume2 size={16} isHovered={hovered} trigger={clicked} />
+    </Button>
+  );
+}
+
+function UndoButton({ disabled, onUndo }: { disabled: boolean; onUndo: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="撤销上一张"
+      title="撤销上一张"
+      disabled={disabled}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        setClicked((c) => c + 1);
+        onUndo();
+      }}
+    >
+      <AnimatedUndo2 size={16} isHovered={hovered} trigger={clicked} />
+    </Button>
+  );
+}
+
+function RevealButton({
+  busy,
+  revealing,
+  onReveal,
+}: {
+  busy: boolean;
+  revealing: boolean;
+  onReveal: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+  return (
+    <Button
+      className="min-w-48 rx-press"
+      onClick={() => {
+        setClicked((c) => c + 1);
+        onReveal();
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      disabled={busy}
+      aria-label="显示答案"
+    >
+      {revealing ? (
+        <AnimatedRotateCw size={16} trigger className="animate-spin motion-reduce:animate-none" />
+      ) : (
+        <AnimatedEye size={16} isHovered={hovered} trigger={clicked} />
+      )}
+      显示答案
+    </Button>
+  );
+}
+
 export function StudyCardStage({
   word,
   phase,
@@ -119,25 +197,8 @@ export function StudyCardStage({
           <Badge variant="outline">复 {remaining.review}</Badge>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="重播音频"
-            title="重播音频"
-            onClick={onReplay}
-          >
-            <Volume2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="撤销上一张"
-            title="撤销上一张"
-            disabled={!canUndo || busy}
-            onClick={onUndo}
-          >
-            <Undo2 className="h-4 w-4" />
-          </Button>
+          <ReplayButton onReplay={onReplay} />
+          <UndoButton disabled={!canUndo || busy} onUndo={onUndo} />
           <Button variant="ghost" size="sm" onClick={onFinish} disabled={busy}>
             <LogOut className="h-4 w-4" />
             结束
@@ -210,19 +271,11 @@ export function StudyCardStage({
       <footer className="shrink-0 space-y-3 border-t border-[var(--rx-border-soft)] px-4 py-4">
         {!backVisible && (
           <div className="flex justify-center">
-            <Button
-              className="min-w-48 rx-press"
-              onClick={onReveal}
-              disabled={busy}
-              aria-label="显示答案"
-            >
-              {phase === "revealing" ? (
-                <RotateCw className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-              显示答案
-            </Button>
+            <RevealButton
+              busy={busy}
+              revealing={phase === "revealing"}
+              onReveal={onReveal}
+            />
           </div>
         )}
         <div className="mx-auto grid max-w-3xl grid-cols-4 gap-2">
@@ -287,7 +340,7 @@ export function StudyReportSummary({
           <div className="text-xl font-semibold">本轮学习完成</div>
           <p className="mt-1 text-sm text-[var(--rx-fg-dim)]">Anki 调度结果已成为本轮报告的唯一依据</p>
         </div>
-        <CheckCircle2 className="h-6 w-6 shrink-0 text-[var(--rx-ok)]" />
+        <AnimatedCheckCircle2 size={24} trigger className="shrink-0 text-[var(--rx-ok)]" />
       </header>
       <div className="grid grid-cols-2 border-b border-[var(--rx-border-soft)] sm:grid-cols-4">
         {[
@@ -446,7 +499,7 @@ export function StudyView() {
           <p>{error ?? "正在准备原生学习会话…"}</p>
           {phase === "error" && sessionId && (
             <Button onClick={() => void resume()}>
-              <RotateCw className="h-4 w-4" />
+              <AnimatedRotateCw size={16} trigger />
               重新连接并恢复
             </Button>
           )}

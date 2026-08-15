@@ -1,48 +1,40 @@
-/**
- * AppSettingsModal.tsx - Reasonix Anki 模态框 + 左侧标签导航系统设置 (72rem / 1152px)
- * 采用现代桌面工作台设计：
- * - 宽 72rem，大圆角模态框 + 磨砂遮罩
- * - 左栏：竖排标签导航（min-w-[200px]），1px border-divider，16px 图标 + 名称 + 可选 beta 徽章
- * - 右栏：内容区，高度上限 max-h-[min(65vh,600px)]，超出滚动；顶部/底部渐变淡出遮罩
- * - 交互细节：选中态高亮，hover 背景，点击 active:scale-[0.97] 微缩放，200ms 淡入淡出过渡
- * - 页脚：Reasonix Anki Logo + 产品名 + 版本号 + 系统架构；点 5 次开启 Developer mode (Feature flags)
- */
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  Plug,
-  Paintbrush,
-  GraduationCap,
-  Orbit,
-  Bot,
-  Languages,
-  HardDrive,
-  RefreshCw,
-  Info,
-  ToggleRight,
-  X,
-  Check,
-  Sliders,
-  CheckCircle2,
-  AlertCircle,
-  Key,
-  Save,
-  Trash2,
   ExternalLink,
   Code2,
   Cpu,
   Database,
   Layers,
-  Sparkles,
   ShieldCheck,
   Activity,
-  Puzzle,
   Copy,
-  TrendingUp,
   Waves,
   Droplets,
-  RotateCw,
+  X,
+  Check,
+  Trash2,
+  Key,
 } from "lucide-react";
+import {
+  AnimatedAlertCircle,
+  AnimatedBot,
+  AnimatedCheckCircle2,
+  AnimatedGraduationCap,
+  AnimatedHardDrive,
+  AnimatedInfo,
+  AnimatedLanguages,
+  AnimatedOrbit,
+  AnimatedPaintbrush,
+  AnimatedPlug,
+  AnimatedPuzzle,
+  AnimatedRefreshCw,
+  AnimatedRotateCw,
+  AnimatedSave,
+  AnimatedSliders,
+  AnimatedSparkles,
+  AnimatedTrendingUp,
+} from "./icons/animated";
 import { Badge, Button, Input, Skeleton, cn } from "@reasonix/ui";
 import { useSettingsStore } from "../stores/settings";
 import { useAppStore } from "../stores/app";
@@ -76,6 +68,111 @@ const ACCENT_PRESETS = [
   { name: "琥珀暖橙", hex: "#F59E0B" },
   { name: "玄铁深灰", hex: "#71717A" },
 ];
+
+function ModalTabButton({
+  tab,
+  isSelected,
+  onClick,
+}: {
+  tab: {
+    id: string;
+    label: string;
+    subLabel: string;
+    icon: React.ComponentType<any>;
+    beta?: boolean;
+  };
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+  const Icon = tab.icon;
+
+  return (
+    <button
+      type="button"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        setClicked((c) => c + 1);
+        onClick();
+      }}
+      className={cn(
+        "group relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-body-sm font-medium transition-all rx-press active:scale-[0.97]",
+        isSelected
+          ? "bg-[#E11D48] text-white shadow-xs font-bold"
+          : "text-[var(--rx-fg-dim)] hover:bg-[var(--rx-sidebar-hover)] hover:text-[var(--rx-fg)]"
+      )}
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        <Icon
+          size={16}
+          isHovered={hovered}
+          trigger={clicked}
+          className={cn(
+            "shrink-0",
+            isSelected ? "text-white" : "text-[var(--rx-fg-faint)] group-hover:text-[var(--rx-fg)]"
+          )}
+        />
+        <span className="truncate">{tab.label}</span>
+      </div>
+
+      {tab.beta && (
+        <span
+          className={cn(
+            "px-2 py-0.5 rounded-full text-micro-xxs font-bold shrink-0 tracking-tight",
+            isSelected
+              ? "bg-white/20 text-white"
+              : "bg-[#E11D48]/15 text-[#E11D48] dark:bg-[#E11D48]/25 dark:text-[#FDA4AF]"
+          )}
+        >
+          测试版
+        </span>
+      )}
+    </button>
+  );
+}
+
+function ModalLogoButton({
+  developerMode,
+  onClick,
+}: {
+  developerMode: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(0);
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        setClicked((c) => c + 1);
+        onClick();
+      }}
+      className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-[var(--rx-sidebar-hover)] cursor-pointer transition-all rx-press select-none"
+      title={developerMode ? "开发者模式已激活" : "连续点击 5 次开启开发者选项"}
+    >
+      <div className="h-8 w-8 rounded-lg bg-[var(--rx-accent-soft)] border border-[var(--rx-accent)]/20 flex items-center justify-center text-[var(--rx-accent)] shrink-0 shadow-2xs">
+        <AnimatedGraduationCap size={16} isHovered={hovered} trigger={clicked} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-caption-xs font-bold text-[var(--rx-fg)] truncate flex items-center gap-1">
+          <span>Reasonix Anki</span>
+          {developerMode && (
+            <span className="text-micro-xxs px-1 py-0.2 rounded bg-amber-500/20 text-amber-500 font-mono">
+              DEV
+            </span>
+          )}
+        </div>
+        <div className="text-micro-xxs text-[var(--rx-fg-faint)] font-mono truncate">
+          v0.1.0 · {inTauri ? "Desktop App" : "Web Preview"}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AppSettingsModal() {
   const {
@@ -232,42 +329,42 @@ export function AppSettingsModal() {
       id: "connection",
       label: "服务桥接",
       subLabel: "AnkiConnect",
-      icon: Plug,
+      icon: AnimatedPlug,
       beta: false,
     },
     {
       id: "appearance",
       label: "外观主题",
       subLabel: "Appearance",
-      icon: Paintbrush,
+      icon: AnimatedPaintbrush,
       beta: false,
     },
     {
       id: "review",
       label: "复习调度",
       subLabel: "Review & Scheduling",
-      icon: GraduationCap,
+      icon: AnimatedGraduationCap,
       beta: false,
     },
     {
       id: "stats",
       label: "统计热力",
       subLabel: "Stats & Heatmap",
-      icon: TrendingUp,
+      icon: AnimatedTrendingUp,
       beta: false,
     },
     {
       id: "galaxy",
       label: "知识星系",
       subLabel: "Galaxy 3D",
-      icon: Orbit,
+      icon: AnimatedOrbit,
       beta: false,
     },
     {
       id: "ai",
       label: "AI 智学",
       subLabel: "AI Assistant",
-      icon: Bot,
+      icon: AnimatedBot,
       beta: true,
       flushContent: true,
     },
@@ -275,34 +372,35 @@ export function AppSettingsModal() {
       id: "language",
       label: "语言翻译",
       subLabel: "Language & Translation",
-      icon: Languages,
+      icon: AnimatedLanguages,
       beta: false,
     },
     {
       id: "resources",
       label: "存储缓存",
       subLabel: "Storage & Cache",
-      icon: HardDrive,
+      icon: AnimatedHardDrive,
       beta: false,
     },
     {
       id: "updates",
       label: "应用更新",
       subLabel: "Updates",
-      icon: RefreshCw,
-      beta: false,    },
+      icon: AnimatedRefreshCw,
+      beta: false,
+    },
     {
       id: "about",
       label: "关于",
       subLabel: "About",
-      icon: Info,
+      icon: AnimatedInfo,
       beta: false,
     },
     {
       id: "plugins",
       label: "插件与同步",
       subLabel: "Addon & Sync",
-      icon: Puzzle,
+      icon: AnimatedPuzzle,
       beta: false,
     },
     ...(settings.developerMode
@@ -311,7 +409,7 @@ export function AppSettingsModal() {
             id: "flags",
             label: "Feature flags",
             subLabel: "开发者实验选项",
-            icon: ToggleRight,
+            icon: AnimatedSliders,
             beta: false,
           },
         ]
@@ -343,7 +441,7 @@ export function AppSettingsModal() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--rx-border-soft)] select-none">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-2xl bg-[var(--rx-accent)] text-[var(--rx-accent-fg)] shadow-xs">
-              <Sliders className="h-5 w-5" />
+              <AnimatedSliders size={20} />
             </div>
             <div>
               <h1 className="heading-xl flex items-center gap-2">
@@ -387,67 +485,22 @@ export function AppSettingsModal() {
           <aside className="w-56 min-w-[200px] shrink-0 border-r border-[var(--rx-border-soft)] flex flex-col justify-between p-3 select-none bg-[var(--rx-bg-soft)]/30">
             {/* 标签列表 */}
             <nav className="space-y-1 overflow-y-auto max-h-[480px] pr-1" aria-label="设置标签">
-              {TABS.map((tab) => {
-                const isSelected = currentTab === tab.id;
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={`modal_tab_${tab.id}`}
-                    type="button"
-                    onClick={() => setCurrentTab(tab.id)}
-                    className={cn(
-                      "group relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-body-sm font-medium transition-all rx-press active:scale-[0.97]",
-                      isSelected
-                        ? "bg-[#E11D48] text-white shadow-xs font-bold"
-                        : "text-[var(--rx-fg-dim)] hover:bg-[var(--rx-sidebar-hover)] hover:text-[var(--rx-fg)]"
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5 truncate">
-                      <Icon className={cn("h-4 w-4 shrink-0", isSelected ? "text-white" : "text-[var(--rx-fg-faint)] group-hover:text-[var(--rx-fg)]")} />
-                      <span className="truncate">{tab.label}</span>
-                    </div>
-
-                    {tab.beta && (
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 rounded-full text-micro-xxs font-bold shrink-0 tracking-tight",
-                          isSelected
-                            ? "bg-white/20 text-white"
-                            : "bg-[#E11D48]/15 text-[#E11D48] dark:bg-[#E11D48]/25 dark:text-[#FDA4AF]"
-                        )}
-                      >
-                        测试版
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {TABS.map((tab) => (
+                <ModalTabButton
+                  key={`modal_tab_${tab.id}`}
+                  tab={tab}
+                  isSelected={currentTab === tab.id}
+                  onClick={() => setCurrentTab(tab.id)}
+                />
+              ))}
             </nav>
 
             {/* 页脚：Reasonix Anki Logo + 产品名 + 版本号 + 点 5 次开启 Developer mode */}
             <div className="pt-3 border-t border-[var(--rx-border-soft)]">
-              <div
+              <ModalLogoButton
+                developerMode={!!settings.developerMode}
                 onClick={handleLogoClick}
-                className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-[var(--rx-sidebar-hover)] cursor-pointer transition-all rx-press select-none"
-                title={settings.developerMode ? "开发者模式已激活" : "连续点击 5 次开启开发者选项"}
-              >
-                <div className="h-8 w-8 rounded-lg bg-[var(--rx-accent-soft)] border border-[var(--rx-accent)]/20 flex items-center justify-center text-[var(--rx-accent)] shrink-0 shadow-2xs">
-                  <GraduationCap className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-caption-xs font-bold text-[var(--rx-fg)] truncate flex items-center gap-1">
-                    <span>Reasonix Anki</span>
-                    {settings.developerMode && (
-                      <span className="text-micro-xxs px-1 py-0.2 rounded bg-amber-500/20 text-amber-500 font-mono">
-                        DEV
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-micro-xxs text-[var(--rx-fg-faint)] font-mono truncate">
-                    v0.1.0 · {inTauri ? "Desktop App" : "Web Preview"}
-                  </div>
-                </div>
-              </div>
+              />
             </div>
           </aside>
 
@@ -495,9 +548,9 @@ export function AppSettingsModal() {
                               )}
                             >
                               {connection.status === "connected" ? (
-                                <CheckCircle2 className="h-6 w-6" />
+                                <AnimatedCheckCircle2 size={24} />
                               ) : (
-                                <AlertCircle className="h-6 w-6" />
+                                <AnimatedAlertCircle size={24} />
                               )}
                             </div>
                             <div className="min-w-0">
@@ -531,7 +584,7 @@ export function AppSettingsModal() {
                               disabled={syncing}
                               className="text-body-sm font-bold gap-1.5 rx-press"
                             >
-                              <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
+                              <AnimatedRefreshCw size={16} trigger={syncing} className={cn(syncing && "animate-spin")} />
                               AnkiWeb 同步
                             </Button>
                             <Button
@@ -541,7 +594,7 @@ export function AppSettingsModal() {
                               disabled={testingConnection}
                               className="text-body-sm font-bold gap-1.5 rx-press"
                             >
-                              <RefreshCw className={cn("h-4 w-4", testingConnection && "animate-spin")} />
+                              <AnimatedRefreshCw size={16} trigger={testingConnection} className={cn(testingConnection && "animate-spin")} />
                               测试连通
                             </Button>
                           </div>
@@ -558,9 +611,9 @@ export function AppSettingsModal() {
                             )}
                           >
                             {testResult.success ? (
-                              <CheckCircle2 className="h-4 w-4 shrink-0" />
+                              <AnimatedCheckCircle2 size={16} />
                             ) : (
-                              <AlertCircle className="h-4 w-4 shrink-0" />
+                              <AnimatedAlertCircle size={16} />
                             )}
                             <span>{testResult.message}</span>
                           </div>
@@ -623,7 +676,7 @@ export function AppSettingsModal() {
                             onClick={handleSaveConnection}
                             className="text-body-sm font-bold gap-1.5 rx-press"
                           >
-                            <Save className="h-4 w-4" />
+                            <AnimatedSave size={16} />
                             保存连接配置
                           </Button>
                         </div>
@@ -1037,7 +1090,7 @@ export function AppSettingsModal() {
                                 </div>
                               </div>
                               {settings.heatmapStyle !== "classic" && (
-                                <CheckCircle2 className="h-4 w-4 text-[var(--rx-accent)]" />
+                                <AnimatedCheckCircle2 size={16} />
                               )}
                             </div>
                             <div className="w-full flex items-center gap-1.5 mt-2 p-1.5 rounded-xl bg-[var(--rx-bg-soft)]/60 border border-[var(--rx-border-soft)]">
@@ -1080,7 +1133,7 @@ export function AppSettingsModal() {
                                 </div>
                               </div>
                               {settings.heatmapStyle === "classic" && (
-                                <CheckCircle2 className="h-4 w-4 text-[var(--rx-accent)]" />
+                                <AnimatedCheckCircle2 size={16} />
                               )}
                             </div>
                             <div className="w-full flex items-center gap-1.5 mt-2 p-1.5 rounded-xl bg-[var(--rx-bg-soft)]/60 border border-[var(--rx-border-soft)]">
@@ -1131,7 +1184,7 @@ export function AppSettingsModal() {
                                     <span className="text-body-sm font-bold">{theme.name}</span>
                                   </div>
                                   {isSelected && (
-                                    <CheckCircle2 className="h-4 w-4 text-[var(--rx-accent)]" />
+                                    <AnimatedCheckCircle2 size={16} />
                                   )}
                                 </div>
                                 {/* 色阶条 */}
@@ -1444,7 +1497,7 @@ export function AppSettingsModal() {
                                   onClick={() => setWavePreviewKey((k) => k + 1)}
                                   className="gap-1.5 text-caption-xs font-bold rx-press"
                                 >
-                                  <RotateCw className="h-3.5 w-3.5" />
+                                  <AnimatedRotateCw size={14} trigger={wavePreviewKey} />
                                   重放波浪揭示
                                 </Button>
                               </div>
@@ -1842,7 +1895,7 @@ export function AppSettingsModal() {
                     >
                       <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--rx-bg-soft)]/50 border border-[var(--rx-border-soft)]">
                         <div className="flex items-center gap-3">
-                          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          <AnimatedCheckCircle2 size={20} className="text-emerald-500" />
                           <div>
                             <div className="text-body-nm font-bold">当前已是最新版本</div>
                             <div className="text-caption-xs text-[var(--rx-fg-faint)]">
@@ -1855,7 +1908,7 @@ export function AppSettingsModal() {
                           onClick={() => toast({ title: "已检查更新，当前为最新版本" })}
                           className="text-body-sm font-bold gap-1.5 rx-press"
                         >
-                          <RefreshCw className="h-4 w-4" />
+                          <AnimatedRefreshCw size={16} />
                           检查更新
                         </Button>
                       </div>
@@ -1873,7 +1926,7 @@ export function AppSettingsModal() {
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl bg-[var(--rx-bg-soft)]/60 border border-[var(--rx-border-soft)] gap-4">
                           <div className="flex items-center gap-3.5">
                             <div className="p-2.5 rounded-2xl bg-[var(--rx-accent-soft)] text-[var(--rx-accent)] shadow-xs">
-                              <GraduationCap className="h-7 w-7" />
+                              <AnimatedGraduationCap size={28} />
                             </div>
                             <div>
                               <div className="text-body-nm font-bold flex items-center gap-2">
@@ -1937,7 +1990,7 @@ export function AppSettingsModal() {
 
                             <div className="p-3 rounded-xl bg-[var(--rx-bg-soft)]/40 border border-[var(--rx-border-soft)] space-y-1">
                               <div className="flex items-center gap-1.5 text-caption-xs font-bold text-[var(--rx-fg)]">
-                                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                                <AnimatedSparkles size={14} className="text-amber-500" />
                                 <span>设计系统</span>
                               </div>
                               <div className="text-caption-xs text-[var(--rx-fg-faint)] font-mono">
@@ -1982,7 +2035,7 @@ export function AppSettingsModal() {
                           <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                               <div className="text-body-sm font-bold flex items-center gap-1.5">
-                                <Puzzle className="h-4 w-4 text-purple-500" />
+                                <AnimatedPuzzle size={16} className="text-purple-500" />
                                 <span>社区插件与模板生态 (M7 筹备中)</span>
                                 <Badge variant="secondary" className="text-micro-xxs font-bold">
                                   即将推出

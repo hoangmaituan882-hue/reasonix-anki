@@ -5,6 +5,12 @@
 
 ## 未发布（工作区）
 
+### 设置弹窗（AppSettingsModal）+ v2 设置功能回归
+- **弹窗移植**：`components/AppSettingsModal.tsx`（2186 行）从 v1 移植，HEATMAP_THEMES import 改指向 `features/settings/heatmapPreview`
+- **双入口**：侧边栏「系统设置」点击 → 打开设置弹窗（v1 默认形态）；hover 显示 ExternalLink 按钮 → 独立设置窗口（v2 已有）；App.tsx 挂载 `<AppSettingsModal />`
+- **v2 设置回归**：弹窗新增「插件与同步」tab，回归 v2 的 PluginSyncCard（插件版本一致性 + 安装引导）/ DiagnosticsCard（Anki/8765/插件/Profile 四诊断）/ AboutCard（版本/commit/构建时间）——此前因 SettingsSheet 删除成为孤儿组件，现重新接入
+- 验证：tsc 零错误；前端 26 文件 / 101 测试全绿；vite build 成功
+
 ### 右侧背词助手面板（完整移植 v1）
 - **子系统移植**：`components/achievements/`（8 文件：成就墙/解锁弹窗/像素解锁提示/数据）、`components/widgets/`（10 文件：桌面小部件对话框/玻璃天气/玻璃音乐/会议提醒/沉浸小部件视图/图鉴）、`components/companion/`（VocabCompanionPanel 2475 行 + ADHDVocabArcade 背词游戏 + index）
 - **集成**：`stores/app.ts` 加 `rightPanelOpen`（`ra.rightPanelOpen` 持久化，默认开）+ `toggleRightPanel`；App.tsx header 加「沉浸助手」CloudSun 开关按钮（连接后显示，脉冲动画指示开启态）+ `AnimatePresence` 挂载右侧面板（连接且开启时显示）

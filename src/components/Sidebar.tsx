@@ -1,6 +1,7 @@
 import {
   BarChart3,
   CalendarDays,
+  ExternalLink,
   GraduationCap,
   Library,
   Moon,
@@ -26,6 +27,8 @@ import {
   cn,
 } from "@reasonix/ui";
 import { DIRECTIONS, useAppStore, type Direction, type View } from "../stores/app";
+import { useSettingsStore } from "../stores/settings";
+import { openSettingsWindow } from "../lib/window";
 
 const NAV_ITEMS: { id: View; label: string; icon: typeof Library }[] = [
   { id: "today", label: "今日学习", icon: CalendarDays },
@@ -60,6 +63,7 @@ export function Sidebar() {
     sidebarCollapsed: collapsed,
     toggleSidebar,
   } = useAppStore();
+  const openSettingsModal = useSettingsStore((s) => s.openSettingsModal);
 
   const cycleDirection = () => {
     const idx = DIRECTIONS.findIndex((d) => d.id === direction);
@@ -122,7 +126,13 @@ export function Sidebar() {
               <button
                 key={id}
                 type="button"
-                onClick={() => setView(id)}
+                onClick={() => {
+                  if (id === "settings") {
+                    openSettingsModal();
+                  } else {
+                    setView(id);
+                  }
+                }}
                 aria-current={active ? "page" : undefined}
                 aria-label={collapsed ? label : undefined}
                 className={cn(
@@ -146,6 +156,25 @@ export function Sidebar() {
                 </span>
               </button>
             );
+            if (id === "settings" && !collapsed) {
+              return (
+                <div key={id} className="group/navitem relative flex w-full items-center">
+                  {button}
+                  {/* 系统设置项专属：独立窗口快捷图标 */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void openSettingsWindow();
+                    }}
+                    title="在独立窗口中打开设置"
+                    className="absolute right-2 opacity-0 group-hover/navitem:opacity-100 hover:text-[var(--rx-accent)] text-[var(--rx-fg-faint)] p-1 rounded-md hover:bg-[var(--rx-bg-elev)] transition-all"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              );
+            }
             return collapsed ? (
               <Tooltip key={id}>
                 <TooltipTrigger asChild>{button}</TooltipTrigger>

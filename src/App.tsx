@@ -9,6 +9,7 @@ import { Sidebar } from "./components/Sidebar";
 import { ToasterLite } from "./components/ToasterLite";
 import { WindowControls } from "./components/WindowControls";
 import { VocabCompanionPanel } from "./components/companion";
+import { AppSettingsModal } from "./components/AppSettingsModal";
 import { BrowseView } from "./features/BrowseView";
 import { EditorView } from "./features/EditorView";
 import { NewNoteDialog } from "./features/editor/NewNoteDialog";
@@ -197,6 +198,7 @@ function App() {
             <VocabCompanionPanel onClose={toggleRightPanel} />
           )}
         </AnimatePresence>
+        <AppSettingsModal />
       </div>
     </div>
   );

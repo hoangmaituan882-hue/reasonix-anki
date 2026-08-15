@@ -43,11 +43,14 @@ interface AppState {
   sidebarCollapsed: boolean;
   /** 窗口四角圆角开关（Win10 无边框透明窗口 + CSS 圆角；关闭即直角观感） */
   roundedCorners: boolean;
+  /** 右侧背词助手面板开关（沉浸助手） */
+  rightPanelOpen: boolean;
   setView: (view: View) => void;
   setDirection: (direction: Direction) => void;
   toggleDark: () => void;
   toggleSidebar: () => void;
   setRoundedCorners: (enabled: boolean) => void;
+  toggleRightPanel: () => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -65,6 +68,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   dark: load<boolean>("ra.dark", true),
   sidebarCollapsed: load<boolean>("ra.sidebarCollapsed", false),
   roundedCorners: load<boolean>("ra.roundedCorners", true),
+  rightPanelOpen: load<boolean>("ra.rightPanelOpen", true),
 
   setView: (view) => set({ view }),
 
@@ -88,6 +92,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setRoundedCorners: (roundedCorners) => {
     localStorage.setItem("ra.roundedCorners", JSON.stringify(roundedCorners));
     set({ roundedCorners });
+  },
+
+  toggleRightPanel: () => {
+    const rightPanelOpen = !get().rightPanelOpen;
+    localStorage.setItem("ra.rightPanelOpen", JSON.stringify(rightPanelOpen));
+    set({ rightPanelOpen });
   },
 }));
 

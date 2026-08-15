@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Settings as SettingsIcon } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import { CloudSun, Settings as SettingsIcon } from "lucide-react";
+import { cn } from "@reasonix/ui";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ConnectionIndicator } from "./components/ConnectionIndicator";
 import { DisconnectedScreen } from "./components/DisconnectedScreen";
 import { Sidebar } from "./components/Sidebar";
 import { ToasterLite } from "./components/ToasterLite";
 import { WindowControls } from "./components/WindowControls";
+import { VocabCompanionPanel } from "./components/companion";
 import { BrowseView } from "./features/BrowseView";
 import { EditorView } from "./features/EditorView";
 import { NewNoteDialog } from "./features/editor/NewNoteDialog";
@@ -21,7 +24,8 @@ import { applyTheme, useAppStore, viewTitle } from "./stores/app";
 import { useStudySessionStore } from "./stores/studySession";
 
 function App() {
-  const { view, setView, direction, dark, roundedCorners } = useAppStore();
+  const { view, setView, direction, dark, roundedCorners, rightPanelOpen, toggleRightPanel } =
+    useAppStore();
   const connection = useAnkiConnection();
   const studyPhase = useStudySessionStore((state) => state.phase);
   const studySessionId = useStudySessionStore((state) => state.sessionId);
@@ -141,6 +145,24 @@ function App() {
           >
             <h1 className="text-sm font-semibold">{viewTitle(view)}</h1>
             <div className="flex items-center gap-2">
+              {connection.status === "connected" && (
+                <button
+                  type="button"
+                  onClick={toggleRightPanel}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-[var(--rx-r-m)] px-2.5 py-1 text-xs font-bold transition-all border border-transparent active:scale-95 rx-press",
+                    rightPanelOpen
+                      ? "bg-[#DF9D6A]/10 text-[#C9844F] dark:bg-[#C9844F]/20 dark:text-[#EAE4DC] border-[#DF9D6A]/20"
+                      : "text-[var(--rx-fg-dim)]",
+                  )}
+                  title={rightPanelOpen ? "隐藏背词助手" : "开启背词助手"}
+                >
+                  <CloudSun
+                    className={cn("h-4 w-4 text-[#DF9D6A]", rightPanelOpen && "animate-pulse")}
+                  />
+                  <span className="hidden sm:inline">沉浸助手</span>
+                </button>
+              )}
               {settingsButton}
               <ConnectionIndicator />
               {inTauri && <WindowControls />}
@@ -170,6 +192,11 @@ function App() {
         <ToasterLite />
         <NoteEditorSheet />
         <NewNoteDialog />
+        <AnimatePresence>
+          {connection.status === "connected" && rightPanelOpen && (
+            <VocabCompanionPanel onClose={toggleRightPanel} />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

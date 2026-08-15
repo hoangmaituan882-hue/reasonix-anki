@@ -5,6 +5,12 @@
 
 ## 未发布（工作区）
 
+### 右侧背词助手面板（完整移植 v1）
+- **子系统移植**：`components/achievements/`（8 文件：成就墙/解锁弹窗/像素解锁提示/数据）、`components/widgets/`（10 文件：桌面小部件对话框/玻璃天气/玻璃音乐/会议提醒/沉浸小部件视图/图鉴）、`components/companion/`（VocabCompanionPanel 2475 行 + ADHDVocabArcade 背词游戏 + index）
+- **集成**：`stores/app.ts` 加 `rightPanelOpen`（`ra.rightPanelOpen` 持久化，默认开）+ `toggleRightPanel`；App.tsx header 加「沉浸助手」CloudSun 开关按钮（连接后显示，脉冲动画指示开启态）+ `AnimatePresence` 挂载右侧面板（连接且开启时显示）
+- 面板 3 tab：背单词（沉浸式迷你学习/词典）/ 成就站 / 小部件
+- 验证：tsc 零错误；前端 26 文件 / 101 测试全绿；vite build 成功
+
 ### 右键上下文菜单（完整移植 v1）
 - **组件**：移植 `components/ContextMenu.tsx`（771 行完整实现：morph 展开动画、触屏长按、键盘导航/typeahead、aria 语义）；2 冒烟测试
 - **牌组树**（DeckTree）：右键弹出「开始复习此牌组（R）/ 在列表中筛选 / 添加新笔记至此牌组 / 查看学习统计 / 复制牌组名称」

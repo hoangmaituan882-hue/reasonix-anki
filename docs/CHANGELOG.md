@@ -5,6 +5,10 @@
 
 ## 未发布（工作区）
 
+### 独立设置窗口权限补齐
+- **capabilities**：`default.json` windows 列表加入 `settings`（独立设置窗口继承 opener/sql/core 权限）；permissions 加 `core:webview:allow-create-webview-window`（`openSettingsWindow` 动态创建 WebviewWindow 的运行时权限）
+- 验证：cargo check 通过；standalone 模式隐藏独立窗口按钮逻辑确认（SettingsView L189）
+
 ### 设置页移植（v1 SettingsView 引入，移除 SettingsSheet 抽屉）
 - **基础设施**：移植 `stores/settings.ts`（`ra.settings.v1` 持久化 + updateSetting(s)/resetToDefaults）、`SettingsControls.tsx`（Checkbox/CheckboxGroup/ToggleRow）、`Slider.tsx`、`lib/window.ts`（openSettingsWindow 跨窗口）、`lib/ease.ts`；补 `motion`/`tailwind-merge` 依赖
 - **设置页本体**：移植 `features/SettingsView.tsx`（连接/外观/复习/统计/星系/数据 6 tab）；热力图预览构件（HEATMAP_THEMES/FluidWaveWaterLines + rx-wave CSS）抽取到 `features/settings/heatmapPreview.tsx`（不动主项目 StatsView）

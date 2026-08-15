@@ -92,8 +92,8 @@ export function Checkbox({
           <div className="flex items-center justify-between gap-2">
             <span
               className={cn(
-                "text-[15px] font-semibold text-[var(--rx-fg)] transition-colors leading-[1.4]",
-                isSelected && "font-semibold"
+                "text-[15px] font-bold text-[var(--rx-fg)] transition-colors leading-[1.4]",
+                isSelected && "font-bold"
               )}
             >
               {label}
@@ -101,7 +101,7 @@ export function Checkbox({
             {badge && <div className="shrink-0">{badge}</div>}
           </div>
           {description && (
-            <p className="text-[14px] font-normal text-[var(--rx-fg)]/65 leading-[1.5] mt-1">
+            <p className="text-[14px] font-normal text-[var(--rx-fg)]/80 leading-[1.5] mt-1">
               {description}
             </p>
           )}
@@ -214,13 +214,13 @@ export function ToggleRow({
       <div className="flex flex-col gap-1 pr-2 flex-1 min-w-0">
         <div className="flex items-center gap-2">
           {icon && <span className="text-[var(--rx-accent)] shrink-0">{icon}</span>}
-          <span className="text-[16px] font-semibold text-[var(--rx-fg)] leading-[1.4]">
+          <span className="text-[16px] font-bold text-[var(--rx-fg)] leading-[1.4]">
             {title}
           </span>
           {badge && <span className="shrink-0 ml-1">{badge}</span>}
         </div>
         {description && (
-          <div className="text-[14px] font-normal text-[var(--rx-fg)]/65 leading-[1.5]">
+          <div className="text-[14px] font-normal text-[var(--rx-fg)]/80 leading-[1.5]">
             {description}
           </div>
         )}
@@ -265,12 +265,12 @@ export function CheckboxGroup({
         <div className="flex items-center justify-between pb-2 px-1 border-b border-[var(--rx-border-soft)]/60 mb-2">
           <div className="flex flex-col gap-1">
             {title && (
-              <div className="text-[18px] font-semibold text-[var(--rx-fg)] leading-[1.4]">
+              <div className="text-[18px] font-bold text-[var(--rx-fg)] leading-[1.4]">
                 {title}
               </div>
             )}
             {description && (
-              <div className="text-[14px] font-normal text-[var(--rx-fg)]/65 leading-[1.5]">
+              <div className="text-[14px] font-normal text-[var(--rx-fg)]/80 leading-[1.5]">
                 {description}
               </div>
             )}

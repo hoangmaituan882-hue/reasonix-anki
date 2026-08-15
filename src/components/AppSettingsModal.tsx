@@ -2115,8 +2115,8 @@ function SectionBlock({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-[18px] font-semibold text-[var(--rx-fg)] leading-[1.4] tracking-tight">{title}</h2>
-        <p className="text-[14px] font-normal text-[var(--rx-fg)]/65 leading-[1.5] mt-1">{description}</p>
+        <h2 className="text-[18px] font-bold text-[var(--rx-fg)] leading-[1.4] tracking-tight">{title}</h2>
+        <p className="text-[14px] font-normal text-[var(--rx-fg)]/80 leading-[1.5] mt-1">{description}</p>
       </div>
       {children}
     </div>

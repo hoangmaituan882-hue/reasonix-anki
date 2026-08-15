@@ -91,3 +91,95 @@ body {
   animation: rx-wave-reveal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
   will-change: transform, opacity;
 }
+
+/* ===== 字体排版阶梯（从 v1 Ainox 移植，DESIGN 字号令牌 + 工具类） ===== */
+:root {
+  /* 字号令牌 */
+  --font-size-xxs: 0.625rem; /* 10px */
+  --font-size-xs: 0.75rem;   /* 12px 徽章/角标 */
+  --font-size-sm: 0.875rem;  /* 14px 次要正文 */
+  --font-size-nm: 1rem;      /* 16px 正文基准 */
+  --font-size-md: 1.125rem;  /* 18px */
+  --font-size-lg: 1.25rem;   /* 20px */
+  --font-size-xl: 1.5rem;    /* 24px 卡片标题 */
+  --font-size-2xl: 2rem;     /* 32px */
+  --font-size-3xl: 3rem;     /* 48px 页面大标题 */
+
+  /* 字重档位 */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* 语义映射 */
+  --font-weight-text: 500;    /* medium 500 */
+  --font-weight-heading: 800; /* extrabold 800 */
+  --font-weight-title: 800;   /* extrabold 800 */
+}
+
+/* 基础全局排版：基准字号 16px，正文默认 medium 500 */
+html {
+  font-size: 16px;
+}
+
+/* 标题工具类：对应 text-{n}xl + extrabold + leading-none + 主文字色 */
+.heading-2xl {
+  font-size: var(--font-size-2xl); /* 32px */
+  font-weight: var(--font-weight-heading); /* 800 */
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--rx-fg);
+}
+
+.heading-xl {
+  font-size: var(--font-size-xl); /* 24px */
+  font-weight: var(--font-weight-heading); /* 800 */
+  line-height: 1;
+  letter-spacing: -0.015em;
+  color: var(--rx-fg);
+}
+
+.heading-lg {
+  font-size: var(--font-size-lg); /* 20px */
+  font-weight: var(--font-weight-bold); /* 700 */
+  line-height: 1.15;
+  color: var(--rx-fg);
+}
+
+.heading-md {
+  font-size: var(--font-size-md); /* 18px */
+  font-weight: var(--font-weight-bold); /* 700 */
+  line-height: 1.2;
+  color: var(--rx-fg);
+}
+
+/* 语义化排版辅助类 */
+.text-body-nm {
+  font-size: var(--font-size-nm); /* 16px */
+  font-weight: var(--font-weight-text); /* 500 */
+  line-height: 1.55;
+}
+
+.text-body-sm {
+  font-size: var(--font-size-sm); /* 14px */
+  font-weight: var(--font-weight-text); /* 500 */
+  line-height: 1.5;
+}
+
+.text-caption-xs {
+  font-size: var(--font-size-xs); /* 12px */
+  font-weight: var(--font-weight-medium); /* 500 */
+  line-height: 1.4;
+}
+
+.text-badge-xs {
+  font-size: var(--font-size-xs); /* 12px */
+  font-weight: var(--font-weight-bold); /* 700 */
+  line-height: 1;
+}
+
+.text-micro-xxs {
+  font-size: var(--font-size-xxs); /* 10px */
+  font-weight: var(--font-weight-medium); /* 500 */
+  line-height: 1.3;
+}

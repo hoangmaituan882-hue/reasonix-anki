@@ -1672,8 +1672,8 @@ function SettingCard({
   return (
     <div className="rounded-2xl border border-[var(--rx-border-soft)] bg-[var(--rx-bg-elev)] p-5 shadow-xs space-y-4">
       <div>
-        <h2 className="text-[18px] font-semibold text-[var(--rx-fg)] leading-[1.4]">{title}</h2>
-        <p className="text-[14px] font-normal text-[var(--rx-fg)]/65 leading-[1.5] mt-1">{description}</p>
+        <h2 className="text-[18px] font-bold text-[var(--rx-fg)] leading-[1.4]">{title}</h2>
+        <p className="text-[14px] font-normal text-[var(--rx-fg)]/80 leading-[1.5] mt-1">{description}</p>
       </div>
       {children}
     </div>

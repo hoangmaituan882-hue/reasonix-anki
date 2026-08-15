@@ -5,6 +5,11 @@
 
 ## 未发布（工作区）
 
+### 设置界面排版阶梯移植 + 字重对比强化
+- **字体工具类移植**：src/index.css 新增字号令牌（--font-size-xxs~3xl：10/12/14/16/18/20/24/32/48px）与字重令牌（--font-weight-regular/medium/bold/extrabold + 语义映射）+ 工具类 `.heading-2xl/xl/lg/md`（800/700 字重）、`.text-body-nm`（16px/500）、`.text-body-sm`（14px/500）、`.text-caption-xs`（12px/500）、`.text-badge-xs`（12px/700）、`.text-micro-xxs`（10px/500）——AppSettingsModal/SettingsView 里 74 处既有用法从此获得真实定义
+- **字重对比强化**（用户：字更大、黑色重更明显）：ToggleRow 标题 16px 600→700；Checkbox 条目标签 15px 600→700；区块标题 18px 600→700（CheckboxGroup/SectionBlock/SettingCard）；全部说明文字 `--rx-fg`/65→/80（不透明度提升，更清晰）；Tab 导航选中态 font-bold（700）
+- 验证：tsc 零错误；前端 26 文件 / 101 测试全绿；vite build 成功
+
 ### 插件设置排版适配（对齐设置弹窗字号字重）
 - **PluginSyncCard / DiagnosticsCard / AboutCard** 排版对齐 AppSettingsModal 弹窗规范：CardTitle `text-sm`→`text-body-nm font-bold`；描述 `text-xs`→`text-body-sm`；内容行 `text-xs`→`text-body-sm`；辅助文本/徽章 `text-2xs`→`text-caption-xs`/`text-badge-xs`；Alert 标题加 `font-semibold`
 - 验证：tsc 零错误；前端 26 文件 / 101 测试全绿；vite build 成功

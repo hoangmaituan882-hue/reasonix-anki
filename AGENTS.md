@@ -90,6 +90,12 @@ reasonix-anki/
 12. **调度开发只能写入独立 QA Profile**：自动评分、撤销、队列一致性测试不得触碰用户真实牌组；P0 测试安全网和 P1 调度原型通过前，不开始大规模 v2 UI 实现。
 13. **Profile 是所有本地状态的命名空间**：Query key、媒体目录缓存、SQLite stats/mapping 和 study session 都必须包含插件返回的 profileKey；外部切换 Profile 时立即暂停并失效，禁止仅靠 deckId/cardId 区分 collection。
 14. **弹层与图标遵循上游语义**：Dialog/Sheet/Popover/Dropdown/Tooltip 使用 `@reasonix/ui` 的 Radix 实现并保留 Portal/焦点/Esc/碰撞行为；图标使用 Lucide 按需导入，纯图标按钮必须有可访问名称。
+15. **微交互图标与物理选项卡规范（严禁破坏）**：
+    - **图标架构完全对齐 [Lucide Animated (lucide-animated.com)](https://lucide-animated.com/)**：所有 `src/components/icons/animated/` 图标必须基于 `motion/react` 的 `Variants`（`normal` 归位基准态 vs `animate` 激活态），统一由 `useIconAnimation({ isHovered, trigger, onMouseEnter, onMouseLeave })` 驱动。
+    - **严禁角度累加与终态歪斜**：`normal` 状态必须保证 `rotate: 0, x: 0, y: 0, scale: 1` 绝对复位；点击/手动触发必须自动闭环归零，严禁出现点击后图标永久歪掉或后续点击失去响应。
+    - **严禁图层脱节与原地残影**：复合部件（如流苏、云朵、眼睛、光芒）必须整体置于统一的矢量容器或嵌套相对坐标系内，严禁部分路径移动而部分留在原点产生分裂感。
+    - **禁止滥用 `useReducedMotion` 杀死微交互**：鼠标 Hover / 点击属于明确的用户交互反馈，不得将动画状态直接置空导致交互瘫痪；Spring 缓动仅支持 2 点插值，多关键帧使用 `easeInOut`。
+    - **物理选项卡统一使用 `MotionTabs`**：支持 `pill` / `segment` / `underline` 共享布局滑块，且不得使用全局 `<MotionConfig>` 穿透污染子组件动画。
 
 ---
 
@@ -315,6 +321,23 @@ watermark(deck_id PRIMARY KEY, last_ts)                       -- 增量水位线
 ### 2.9 UI 组件库
 
 `@reasonix/ui`（vendor tgz，38 组件 + cn）：Button/Badge/Card/Dialog/Sheet/Select/Table/Tabs/Alert/Skeleton/Progress/ScrollArea/Resizable*/DropdownMenu/InputGroup/Textarea/Input/Label/Separator/Pagination/Tooltip/Toaster…（完整导出面见 design-kit `packages/ui/src/index.ts`）。图标 `lucide-react` 已随依赖安装。主题令牌与动效类见 `../reasonix-design-kit/apps/showcase/src/index.css` 同款映射（已打包进 styles.css）。
+
+### 2.10 微交互图标（Lucide Animated）与物理选项卡（MotionTabs）
+
+**A. 微交互图标（`src/components/icons/animated/`）**
+
+全套 34 个图标严格遵循 [Lucide Animated](https://lucide-animated.com/) 规范设计与实现：
+- **驱动 Hook**：`useIconAnimation({ isHovered, trigger, onMouseEnter, onMouseLeave })`，返回 `{ controls, handleMouseEnter, handleMouseLeave, active }`；
+- **状态机模型**：每个动效节点声明 `Variants`（`normal` 归位态 vs `animate` 激活态）；
+- **归位纪律**：`normal` 状态必须保证 `rotate: 0, scale: 1, x: 0, y: 0`；触发完毕后由 `.then(() => controls.start("normal"))` 确保 100% 自动归位，杜绝残存角度或偏移；
+- **图形完整性**：外部统一为标准 `<svg>`，内部所有动效路径、流苏、光晕均在统一坐标系内运动，严禁图形与底座分离；
+- **关键帧规则**：Spring 弹簧仅用于双点变化；多关键帧（如 `[0, -8, 4, 0]`）统一采用 `easeInOut` 或 `cubic-bezier([0.25, 0.1, 0.25, 1])`，确保跨端 Chromium / WebView2 零渲染异常。
+
+**B. 物理弹性选项卡（`src/components/MotionTabs.tsx`）**
+
+- 支持三种视觉形态：`pill`（胶囊微浮）、`segment`（分段滑动器）、`underline`（下划线追踪）；
+- 核心物理模型：Framer Motion `layoutId="active-indicator"` 驱动的物理弹簧（`stiffness: 170, damping: 24, mass: 1.2`）；
+- 严禁在全局包裹重置子树动画的 `<MotionConfig duration={0}>`，确保内部 Tab 切换与嵌套的图标微交互互不干扰。
 
 ---
 

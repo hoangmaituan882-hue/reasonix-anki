@@ -5,6 +5,12 @@
 
 ## 未发布（工作区）
 
+### 液态注水热力图效果补齐（rx-liquid CSS 移植）
+- **根因**：上一轮接入 v1 热力图时只移植了 `rx-wave-*` 动画类（为设置页预览），漏掉完整液态注水 CSS——HeatmapCell 组件已用 `rx-liquid-cell`/`rx-liquid-body` 类但无对应样式，流体注水效果失效
+- **修复**：`src/index.css` 补齐 `rx-liquid-breathe`/`rx-water-full-pulse`/`rx-liquid-cell`（含 hover 放大 + 波速加速）/`rx-liquid-full-active`（满水脉冲）
+- 产物验证：dist CSS 含 rx-liquid-cell(5)/rx-liquid-body/rx-liquid-breathe/rx-water-full-pulse
+- 验证：tsc 零错误；28 文件 / 105 测试全绿；vite build 成功
+
 ### v1 学习统计与记忆热力图完整接入
 - **StatsView 升级**（382→1388 行）：接入 v1 完整记忆热力图——DayStatsDetailDialog（日明细弹窗：Again/Hard/Good/Easy 分布 + 用时）、HeatmapCell（液态注水/经典方格双风格 + 波浪揭示动画 + 主题色 + hover 详情）、Heatmap 主组件（周范围 13/26/52 切换 + 月份标记 + 连胜/峰值指标 + 8 主题选择器 + 满额目标调整 + 日期数字开关）
 - **数据层**：`lib/db/stats.ts` 补 `getDailyDetail`/`DailyDetailRow`（deck_daily 表日明细聚合，全局/单牌组双口径）

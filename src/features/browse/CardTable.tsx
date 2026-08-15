@@ -1,10 +1,46 @@
-import { Alert, AlertDescription, AlertTitle, Badge, Skeleton, cn } from "@reasonix/ui";
-import { Button } from "@reasonix/ui";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Skeleton,
+  cn,
+} from "@reasonix/ui";
+import {
+  CalendarClock,
+  Copy,
+  PauseCircle,
+  PlayCircle,
+  SquarePen,
+  Trash2,
+} from "lucide-react";
 import type { ReactNode } from "react";
-import { useCardSearch, PAGE_SIZE } from "../../lib/anki/query";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCardSearch, PAGE_SIZE, queryKeys } from "../../lib/anki/query";
 import type { CardInfo } from "../../lib/anki/schemas";
 import { dueLabel, frontText } from "./browseUtil";
 import { RowActions } from "./RowActions";
+import { anki } from "../../lib/anki/actions";
+import { useEditorStore } from "../../stores/editor";
+import { toast, toastError } from "../../components/ToasterLite";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuTrigger,
+} from "../../components/ContextMenu";
 
 interface Props {
   query: string;
@@ -124,32 +160,185 @@ function Row({
   selected: boolean;
   onClick: () => void;
 }) {
+  const qc = useQueryClient();
+  const openEditor = useEditorStore((s) => s.openEditor);
   const suspended = card.queue === -1;
+
+  const [dueOpen, setDueOpen] = useState(false);
+  const [days, setDays] = useState("1");
+  const [delOpen, setDelOpen] = useState(false);
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: queryKeys.decks });
+    qc.invalidateQueries({ queryKey: queryKeys.cardsPrefix });
+  };
+
+  const suspendMut = useMutation({
+    mutationFn: () =>
+      suspended ? anki.unsuspend([card.cardId]) : anki.suspend([card.cardId]),
+    onSuccess: () => {
+      toast({ title: suspended ? "已恢复卡片" : "已暂停卡片" });
+      invalidate();
+    },
+    onError: (e) => toastError("操作失败", e),
+  });
+
+  const dueMut = useMutation({
+    mutationFn: () => anki.setDueDate([card.cardId], days.trim()),
+    onSuccess: () => {
+      toast({ title: `已改期：${days.trim()}` });
+      setDueOpen(false);
+      invalidate();
+    },
+    onError: (e) => toastError("改期失败", e),
+  });
+
+  const delMut = useMutation({
+    mutationFn: () => anki.deleteNotes([card.note]),
+    onSuccess: () => {
+      toast({ title: "已删除笔记及其全部卡片" });
+      setDelOpen(false);
+      invalidate();
+    },
+    onError: (e) => toastError("删除失败", e),
+  });
+
+  const copyText = (text: string, msg: string) => {
+    navigator.clipboard.writeText(text).then(
+      () => toast({ title: msg }),
+      () => toastError("复制失败", new Error("无法访问剪贴板")),
+    );
+  };
+
   return (
-    <tr
-      onClick={onClick}
-      aria-selected={selected}
-      className={cn(
-        "cursor-pointer border-b border-[var(--rx-border-soft)] transition-colors",
-        selected ? "rx-accent-soft" : "hover:bg-[var(--rx-sidebar-hover)]",
-        suspended && "opacity-55",
-      )}
-    >
-      <td className="max-w-0 truncate px-3 py-2" title={frontText(card, 200)}>
-        {frontText(card)}
-      </td>
-      <td className="px-3 py-2 text-xs text-[var(--rx-fg-dim)]">{card.modelName}</td>
-      <td className="px-3 py-2">
-        <Badge variant="outline" className="text-2xs font-normal">
-          {dueLabel(card)}
-        </Badge>
-      </td>
-      <td className="px-3 py-2 text-right text-xs text-[var(--rx-fg-faint)]">
-        {card.reps ?? 0}
-      </td>
-      <td className="px-2 py-1.5">
-        <RowActions card={card} />
-      </td>
-    </tr>
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger>
+          <tr
+            onClick={onClick}
+            aria-selected={selected}
+            className={cn(
+              "cursor-pointer border-b border-[var(--rx-border-soft)] transition-colors",
+              selected ? "rx-accent-soft" : "hover:bg-[var(--rx-sidebar-hover)]",
+              suspended && "opacity-55",
+            )}
+          >
+            <td className="max-w-0 truncate px-3 py-2" title={frontText(card, 200)}>
+              {frontText(card)}
+            </td>
+            <td className="px-3 py-2 text-xs text-[var(--rx-fg-dim)]">{card.modelName}</td>
+            <td className="px-3 py-2">
+              <Badge variant="outline" className="text-2xs font-normal">
+                {dueLabel(card)}
+              </Badge>
+            </td>
+            <td className="px-3 py-2 text-right text-xs text-[var(--rx-fg-faint)]">
+              {card.reps ?? 0}
+            </td>
+            <td className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
+              <RowActions card={card} />
+            </td>
+          </tr>
+        </ContextMenuTrigger>
+
+        <ContextMenuContent className="w-56">
+          <ContextMenuLabel>
+            卡片 #{card.cardId} · 笔记 #{card.note}
+          </ContextMenuLabel>
+
+          <ContextMenuItem onSelect={() => openEditor(card.note)}>
+            <SquarePen className="h-4 w-4 text-[var(--rx-accent)]" />
+            <span>编辑笔记</span>
+            <ContextMenuShortcut>E</ContextMenuShortcut>
+          </ContextMenuItem>
+
+          <ContextMenuItem onSelect={() => suspendMut.mutate()}>
+            {suspended ? (
+              <PlayCircle className="h-4 w-4 text-emerald-500" />
+            ) : (
+              <PauseCircle className="h-4 w-4 text-amber-500" />
+            )}
+            <span>{suspended ? "恢复卡片" : "暂停卡片"}</span>
+            <ContextMenuShortcut>Space</ContextMenuShortcut>
+          </ContextMenuItem>
+
+          <ContextMenuItem onSelect={() => setDueOpen(true)}>
+            <CalendarClock className="h-4 w-4 text-[var(--rx-fg)]" />
+            <span>修改到期日 (改期)…</span>
+          </ContextMenuItem>
+
+          <ContextMenuSeparator />
+
+          <ContextMenuItem onSelect={() => copyText(frontText(card, 1000), "已复制正面文本")}>
+            <Copy className="h-4 w-4 text-[var(--rx-fg-faint)]" />
+            <span>复制正面文本</span>
+          </ContextMenuItem>
+
+          <ContextMenuItem onSelect={() => copyText(String(card.cardId), `已复制卡片 ID: ${card.cardId}`)}>
+            <Copy className="h-4 w-4 text-[var(--rx-fg-faint)]" />
+            <span>复制卡片 ID</span>
+            <ContextMenuShortcut>#{card.cardId}</ContextMenuShortcut>
+          </ContextMenuItem>
+
+          <ContextMenuSeparator />
+
+          <ContextMenuItem tone="destructive" onSelect={() => setDelOpen(true)}>
+            <Trash2 className="h-4 w-4" />
+            <span>删除笔记及卡片…</span>
+            <ContextMenuShortcut>Del</ContextMenuShortcut>
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      {/* 改期 Dialog */}
+      <Dialog open={dueOpen} onOpenChange={setDueOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>改期到…</DialogTitle>
+            <DialogDescription className="text-xs">
+              支持 Anki 语法：0 今天 · 1 明天 · 3-7 随机区间 · 1! 同时重置间隔
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Input
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              placeholder="天数（如 1、3-7、1!）"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") dueMut.mutate();
+              }}
+            />
+            <Button onClick={() => dueMut.mutate()} disabled={dueMut.isPending}>
+              改期
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDueOpen(false)}>
+              取消
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除确认 Dialog */}
+      <Dialog open={delOpen} onOpenChange={setDelOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>删除笔记及卡片？</DialogTitle>
+            <DialogDescription className="text-xs">
+              将删除该笔记及其全部卡片，此操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDelOpen(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={() => delMut.mutate()} disabled={delMut.isPending}>
+              删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

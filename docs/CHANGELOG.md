@@ -5,6 +5,14 @@
 
 ## 未发布（工作区）
 
+### 右键上下文菜单（完整移植 v1）
+- **组件**：移植 `components/ContextMenu.tsx`（771 行完整实现：morph 展开动画、触屏长按、键盘导航/typeahead、aria 语义）；2 冒烟测试
+- **牌组树**（DeckTree）：右键弹出「开始复习此牌组（R）/ 在列表中筛选 / 添加新笔记至此牌组 / 查看学习统计 / 复制牌组名称」
+- **卡片列表**（CardTable）：右键「编辑笔记（E）/ 暂停或恢复卡片（Space）/ 修改到期日改期…（Dialog 支持 0/1/3-7/1! 语法）/ 复制正面 / 复制卡片 ID / 删除笔记及卡片…（确认 Dialog）」；用 mutation + queryKeys 失效刷新
+- **复习会话**（ReviewSession/CardRenderer）：右键「今天暂不复习（B）/ 快速修改此卡笔记（E）/ 暂停这张卡片 / 重设为新卡·重学 / 复制正面 / 复制背面 / 复制卡片 ID」；CardRenderer 新增 onContextMenu prop + iframe contentDocument 右键事件转发（跨沙箱 iframe 坐标换算）
+- **统计热力图**（StatsView）：单元格右键「检索这天复习的所有卡片（复制 rated 语法）/ 复制日期 / 复制检索语法」
+- 验证：tsc 零错误；前端 26 文件 / 101 测试全绿；vite build 成功
+
 ### 独立设置窗口权限补齐
 - **capabilities**：`default.json` windows 列表加入 `settings`（独立设置窗口继承 opener/sql/core 权限）；permissions 加 `core:webview:allow-create-webview-window`（`openSettingsWindow` 动态创建 WebviewWindow 的运行时权限）
 - 验证：cargo check 通过；standalone 模式隐藏独立窗口按钮逻辑确认（SettingsView L189）

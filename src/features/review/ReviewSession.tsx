@@ -1,7 +1,13 @@
 import { Eye, Flag, LogOut, ShieldAlert, ShieldCheck } from "lucide-react";
+import {
+  Copy,
+  PauseCircle,
+  RotateCcw,
+  SquarePen,
+} from "lucide-react";
 import { Button, Progress } from "@reasonix/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { queryKeys } from "../../lib/anki/query";
 import {
   selectCurrentCard,
@@ -9,6 +15,18 @@ import {
   type Ease,
 } from "../../stores/review";
 import { CardRenderer } from "./CardRenderer";
+import { anki } from "../../lib/anki/actions";
+import { useEditorStore } from "../../stores/editor";
+import { toast, toastError } from "../../components/ToasterLite";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuTrigger,
+} from "../../components/ContextMenu";
 
 const EASE_BUTTONS: { ease: Ease; label: string; key: string; color: string }[] = [
   { ease: 1, label: "忘记", key: "1", color: "var(--rx-err)" },
@@ -16,6 +34,12 @@ const EASE_BUTTONS: { ease: Ease; label: string; key: string; color: string }[] 
   { ease: 3, label: "良好", key: "3", color: "var(--rx-ok)" },
   { ease: 4, label: "简单", key: "4", color: "var(--rx-accent)" },
 ];
+
+function extractPlainText(html: string): string {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || "").trim();
+}
 
 /** 进行中的复习会话（技术方案 §5.3：键盘流 + 即时提交） */
 export function ReviewSession() {
@@ -30,6 +54,7 @@ export function ReviewSession() {
   const bury = useReviewStore((s) => s.bury);
   const exit = useReviewStore((s) => s.exit);
   const card = useReviewStore(selectCurrentCard);
+  const openEditor = useEditorStore((s) => s.openEditor);
 
   // 脚本模式（用户显式信任，等同 Anki 原生行为）——JS 驱动的重模板需要
   const [allowScripts, setAllowScripts] = useState(
@@ -97,6 +122,73 @@ export function ReviewSession() {
 
   const done = answered.length + buriedSession.length;
   const progress = queue.length > 0 ? (done / queue.length) * 100 : 0;
+  const handleEdit = useCallback(() => {
+    if (!card) return;
+    openEditor(card.note);
+  }, [card, openEditor]);
+
+  const handleSuspend = useCallback(async () => {
+    if (!card) return;
+    try {
+      await anki.suspend([card.cardId]);
+      toast({ title: `已暂停卡片 #${card.cardId}`, description: "卡片已移至暂停队列" });
+      qc.invalidateQueries({ queryKey: queryKeys.decks });
+      qc.invalidateQueries({ queryKey: queryKeys.cardsPrefix });
+      bury();
+    } catch (err) {
+      toastError("暂停失败", err);
+    }
+  }, [card, bury, qc]);
+
+  const handleForget = useCallback(async () => {
+    if (!card) return;
+    try {
+      await anki.forgetCards([card.cardId]);
+      toast({ title: `已重设为新卡 #${card.cardId}`, description: "卡片复习进度已重置" });
+      qc.invalidateQueries({ queryKey: queryKeys.decks });
+      qc.invalidateQueries({ queryKey: queryKeys.cardsPrefix });
+      bury();
+    } catch (err) {
+      toastError("重设新卡失败", err);
+    }
+  }, [card, bury, qc]);
+
+  const handleCopyQuestion = useCallback(() => {
+    if (!card) return;
+    const text = extractPlainText(card.question);
+    navigator.clipboard.writeText(text);
+    toast({ title: "已复制正面文本" });
+  }, [card]);
+
+  const handleCopyAnswer = useCallback(() => {
+    if (!card) return;
+    const text = extractPlainText(card.answer);
+    navigator.clipboard.writeText(text);
+    toast({ title: "已复制背面文本" });
+  }, [card]);
+
+  const handleCopyCardId = useCallback(() => {
+    if (!card) return;
+    navigator.clipboard.writeText(String(card.cardId));
+    toast({ title: `已复制卡片 ID #${card.cardId}` });
+  }, [card]);
+
+  const cardTriggerRef = useRef<HTMLDivElement | null>(null);
+
+  // 跨 iframe 右键事件转发（CardRenderer 内部 iframe 的右键）
+  const handleIframeContextMenu = useCallback((e: { clientX: number; clientY: number }) => {
+    const trigger = cardTriggerRef.current;
+    if (!trigger) return;
+    trigger.dispatchEvent(
+      new MouseEvent("contextmenu", {
+        bubbles: true,
+        cancelable: true,
+        clientX: e.clientX,
+        clientY: e.clientY,
+      }),
+    );
+  }, []);
+
   const fieldValues = Object.values(card.fields)
     .sort((a, b) => a.order - b.order)
     .map((f) => f.value);
@@ -133,14 +225,70 @@ export function ReviewSession() {
       {/* 卡片区域（iframe 沙箱渲染） */}
       <div className="min-h-0 flex-1 p-4">
         <div className="h-full overflow-hidden rounded-[var(--rx-r-l)] border border-[var(--rx-border-soft)] bg-[var(--rx-bg)] rx-anim-cardbody">
-          <CardRenderer
-            key={`${card.cardId}:${phase}`}
-            html={phase === "answer" ? card.answer : card.question}
-            css={card.css}
-            fieldValues={fieldValues}
-            allowScripts={allowScripts}
-            title={phase === "answer" ? "答案" : "问题"}
-          />
+          <ContextMenu>
+            <ContextMenuTrigger>
+              <div ref={cardTriggerRef} className="h-full">
+                <CardRenderer
+                  key={`${card.cardId}:${phase}`}
+                  html={phase === "answer" ? card.answer : card.question}
+                  css={card.css}
+                  fieldValues={fieldValues}
+                  allowScripts={allowScripts}
+                  title={phase === "answer" ? "答案" : "问题"}
+                  onContextMenu={handleIframeContextMenu}
+                />
+              </div>
+            </ContextMenuTrigger>
+
+            <ContextMenuContent className="w-56">
+              <ContextMenuLabel>
+                卡片 #{card.cardId} · {deck}
+              </ContextMenuLabel>
+              <ContextMenuSeparator />
+
+              <ContextMenuItem onSelect={bury}>
+                <Flag className="h-4 w-4 text-[var(--rx-fg-dim)]" />
+                <span>今天暂不复习</span>
+                <ContextMenuShortcut>B</ContextMenuShortcut>
+              </ContextMenuItem>
+
+              <ContextMenuItem onSelect={handleEdit}>
+                <SquarePen className="h-4 w-4 text-[var(--rx-accent)]" />
+                <span>快速修改此卡笔记</span>
+                <ContextMenuShortcut>E</ContextMenuShortcut>
+              </ContextMenuItem>
+
+              <ContextMenuSeparator />
+
+              <ContextMenuItem onSelect={() => void handleSuspend()}>
+                <PauseCircle className="h-4 w-4 text-amber-500" />
+                <span>暂停这张卡片</span>
+              </ContextMenuItem>
+
+              <ContextMenuItem onSelect={() => void handleForget()}>
+                <RotateCcw className="h-4 w-4 text-[var(--rx-fg-dim)]" />
+                <span>重设为新卡 / 重学</span>
+              </ContextMenuItem>
+
+              <ContextMenuSeparator />
+
+              <ContextMenuItem onSelect={handleCopyQuestion}>
+                <Copy className="h-4 w-4 text-[var(--rx-fg-faint)]" />
+                <span>复制正面文本</span>
+              </ContextMenuItem>
+
+              <ContextMenuItem onSelect={handleCopyAnswer}>
+                <Copy className="h-4 w-4 text-[var(--rx-fg-faint)]" />
+                <span>复制背面文本</span>
+              </ContextMenuItem>
+
+              <ContextMenuItem onSelect={handleCopyCardId}>
+                <Copy className="h-4 w-4 text-[var(--rx-fg-faint)]" />
+                <span>复制卡片 ID</span>
+                <ContextMenuShortcut>#{card.cardId}</ContextMenuShortcut>
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
         </div>
       </div>
 

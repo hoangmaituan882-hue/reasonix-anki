@@ -1,4 +1,4 @@
-import { CalendarDays, Layers, RefreshCw, Trash2 } from "lucide-react";
+import { CalendarDays, Copy, Layers, RefreshCw, Search, Trash2 } from "lucide-react";
 import {
   Badge,
   Button,
@@ -28,6 +28,14 @@ import {
   syncDeck,
 } from "../lib/db/stats";
 import { inTauri } from "../lib/anki/transport";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "../components/ContextMenu";
 
 /** 全局或单牌组两种口径：全局走 getNumCardsReviewedByDay，单牌组走本地 SQLite */
 type Scope = "global" | string; // string = deckName
@@ -175,7 +183,7 @@ export function StatsView() {
         {scope === "global" && globalQ.isPending ? (
           <Skeleton className="h-40 w-full" />
         ) : (
-          <Heatmap daily={daily} />
+          <Heatmap daily={daily} scope={scope} />
         )}
 
         {scope !== "global" && !inTauri && (
@@ -261,7 +269,7 @@ function SummaryCard({
 
 const WEEKS = 26;
 
-function Heatmap({ daily }: { daily: Map<string, number> }) {
+function Heatmap({ daily, scope }: { daily: Map<string, number>; scope: Scope }) {
   const { grid, max } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -302,18 +310,61 @@ function Heatmap({ daily }: { daily: Map<string, number> }) {
     "var(--rx-accent)",
   ];
 
+  // 单格右键：检索这天 / 复制日期 / 复制检索语法
+  const cellSearch = (date: string) => {
+    const rated = date.replace(/-/g, "");
+    const q = scope !== "global" ? `deck:"${scope}" rated:${rated}` : `rated:${rated}`;
+    navigator.clipboard.writeText(q);
+    toast({ title: "已复制 Anki 检索语法", description: q });
+  };
+
   return (
     <div>
       <div className="flex gap-1">
         {grid.map((col, i) => (
           <div key={i} className="flex flex-col gap-1">
             {col.map((cell) => (
-              <div
-                key={cell.date}
-                title={`${cell.date} · ${cell.count} 张`}
-                className="h-3 w-3 rounded-[2px]"
-                style={{ background: COLORS[level(cell.count)] }}
-              />
+              <ContextMenu key={cell.date}>
+                <ContextMenuTrigger>
+                  <div
+                    title={`${cell.date} · ${cell.count} 张`}
+                    className="h-3 w-3 rounded-[2px]"
+                    style={{ background: COLORS[level(cell.count)] }}
+                  />
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-64">
+                  <ContextMenuLabel className="font-mono text-2xs">
+                    📅 {cell.date} · {cell.count} 张复习
+                  </ContextMenuLabel>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem onSelect={() => cellSearch(cell.date)}>
+                    <Search className="h-4 w-4 text-[var(--rx-accent)]" />
+                    <span>检索这天复习的所有卡片</span>
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem
+                    onSelect={() => {
+                      navigator.clipboard.writeText(cell.date);
+                      toast({ title: `已复制日期：${cell.date}` });
+                    }}
+                  >
+                    <Copy className="h-4 w-4 text-[var(--rx-fg-faint)]" />
+                    <span>复制日期</span>
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onSelect={() => {
+                      const rated = cell.date.replace(/-/g, "");
+                      const q =
+                        scope !== "global" ? `deck:"${scope}" rated:${rated}` : `rated:${rated}`;
+                      navigator.clipboard.writeText(q);
+                      toast({ title: "已复制 Anki 检索语法", description: q });
+                    }}
+                  >
+                    <Copy className="h-4 w-4 text-[var(--rx-fg-faint)]" />
+                    <span>复制检索语法</span>
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             ))}
           </div>
         ))}

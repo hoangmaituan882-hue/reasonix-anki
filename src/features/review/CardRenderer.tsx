@@ -1,6 +1,6 @@
 import DOMPurify from "dompurify";
 import { Skeleton } from "@reasonix/ui";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isLocalMediaSrc, peekMediaUrl, resolveMediaUrl } from "../../lib/media";
 
 /**
@@ -151,6 +151,8 @@ interface Props {
   fieldValues?: string[];
   /** 脚本模式：允许执行卡片脚本（用户显式开启，等同 Anki 原生信任级别） */
   allowScripts?: boolean;
+  /** iframe 内右键事件转发（坐标转为页面绝对坐标） */
+  onContextMenu?: (e: { clientX: number; clientY: number }) => void;
 }
 
 export function CardRenderer({
@@ -159,8 +161,10 @@ export function CardRenderer({
   title = "卡片内容",
   fieldValues = [],
   allowScripts = false,
+  onContextMenu,
 }: Props) {
   const [result, setResult] = useState<ProcessResult | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -174,6 +178,35 @@ export function CardRenderer({
     // fieldValues 随卡片切换整体替换，join 后比较即可
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html, allowScripts, fieldValues.join("\u0000")]);
+
+  // iframe 内右键转发到父级（复习右键菜单 / 浏览器开发者工具）
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || !onContextMenu) return;
+    const attach = () => {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!doc) return;
+        const onDocContextMenu = (e: MouseEvent) => {
+          e.preventDefault();
+          const rect = iframe.getBoundingClientRect();
+          onContextMenu({
+            clientX: rect.left + e.clientX,
+            clientY: rect.top + e.clientY,
+          });
+        };
+        doc.addEventListener("contextmenu", onDocContextMenu);
+      } catch {
+        // sandboxed iframe 无法访问时静默跳过
+      }
+    };
+    attach();
+    // srcDoc 重渲染后 contentDocument 会被替换，需重新绑定
+    const timer = window.setTimeout(attach, 50);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [result?.html, onContextMenu]);
 
   if (result === null) {
     return (
@@ -231,6 +264,7 @@ export function CardRenderer({
         </div>
       )}
       <iframe
+        ref={iframeRef}
         title={title}
         sandbox={allowScripts ? "allow-scripts allow-same-origin" : "allow-same-origin"}
         className="min-h-0 w-full flex-1 border-0 bg-transparent"

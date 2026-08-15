@@ -71,13 +71,13 @@ export function PluginSyncCard() {
     <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-body-nm font-bold">插件与同步</CardTitle>
+          <CardTitle className="text-[18px] font-bold text-[var(--rx-fg)] leading-[1.4]">插件与同步</CardTitle>
           <Badge
             variant={installed && !stale ? "outline" : "default"}
             className={
               installed && !stale
-                ? "text-badge-xs font-normal text-[var(--rx-fg-dim)]"
-                : "text-badge-xs font-normal text-[var(--rx-accent)]"
+                ? "text-badge-xs text-[var(--rx-fg-dim)]"
+                : "text-badge-xs text-[var(--rx-accent)]"
             }
           >
             {!installed ? "未安装" : stale ? (addonOlder ? "版本过旧" : "版本不一致") : "已就绪"}
@@ -90,7 +90,7 @@ export function PluginSyncCard() {
       <CardContent className="space-y-3">
         {statusError && (
           <Alert>
-            <AlertTitle className="text-body-sm font-semibold">{statusError}</AlertTitle>
+            <AlertTitle className="text-body-sm font-bold">{statusError}</AlertTitle>
             <AlertDescription className="text-caption-xs">
               请确认 Anki 已打开且插件已安装
             </AlertDescription>
@@ -100,19 +100,19 @@ export function PluginSyncCard() {
         <div className="space-y-1.5 text-body-sm">
           <div className="flex items-center justify-between">
             <span className="text-[var(--rx-fg-dim)]">运行中版本</span>
-            <span className="font-medium">
+            <span className="font-bold">
               {installed ? addonVersion : "—"}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[var(--rx-fg-dim)]">内置安装包版本</span>
-            <span className="font-medium">{BUNDLED_ADDON_VERSION}</span>
+            <span className="font-bold">{BUNDLED_ADDON_VERSION}</span>
           </div>
         </div>
 
         {stale && (
           <Alert>
-            <AlertTitle className="flex items-center gap-1.5 text-body-sm font-semibold">
+            <AlertTitle className="flex items-center gap-1.5 text-body-sm font-bold">
               <PackageX className="h-3.5 w-3.5" aria-hidden />
               插件版本过旧
             </AlertTitle>
@@ -136,7 +136,7 @@ export function PluginSyncCard() {
             <Button
               variant="outline"
               size="sm"
-              className="rx-press w-full justify-start text-body-sm font-medium"
+              className="rx-press w-full justify-start text-body-sm font-bold"
               onClick={() => void revealItemInDir(packagePath)}
             >
               <ExternalLink className="h-3.5 w-3.5" />

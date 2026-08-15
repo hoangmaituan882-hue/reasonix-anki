@@ -726,7 +726,7 @@ export function ContextMenuLabel({
   return (
     <div
       className={cn(
-        "px-2.5 pb-1 pt-1.5 text-micro-xxs font-bold uppercase tracking-wider text-[var(--rx-fg-faint)]",
+        "px-2.5 pb-1 pt-1.5 text-micro-xxs font-bold uppercase tracking-wider text-[var(--rx-fg-faint)] truncate",
         inset && "pl-7",
         className,
       )}
@@ -751,17 +751,20 @@ export function ContextMenuSeparator({
 export interface ContextMenuShortcutProps {
   children: ReactNode;
   className?: string;
+  title?: string;
 }
 
 export function ContextMenuShortcut({
   children,
   className,
+  title,
 }: ContextMenuShortcutProps) {
   return (
     <span
       aria-hidden="true"
+      title={title}
       className={cn(
-        "ml-auto pl-4 font-mono text-micro-xxs font-medium tracking-wide text-[var(--rx-fg-faint)]",
+        "ml-auto shrink-0 pl-2 font-mono text-micro-xxs font-medium tracking-wide text-[var(--rx-fg-faint)] truncate max-w-[6rem] text-right",
         className,
       )}
     >

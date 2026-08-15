@@ -5,6 +5,11 @@
 
 ## 未发布（工作区）
 
+### 黑体失效根因修复 + 插件与同步 tab 排版重构
+- **根因修复（层叠）**：上一轮移植的排版工具类（`.heading-*`/`.text-body-*`）未包 `@layer`，未分层样式优先级高于 Tailwind v4 `@layer utilities`，`.text-body-sm{font-weight:500}` 把同元素 `font-bold(700)` 全部压掉——全站黑体失效。修复：工具类包进 `@layer components`（Tailwind v4 层序 theme<base<components<utilities，700 恢复覆盖 500）；产物验证 `heading-2xl` 前为 `@layer components{`
+- **插件 tab 排版重构**（三卡片）：CardTitle 升 `text-[18px] font-bold` 区块标题规格；状态 Badge 去 `font-normal`（恢复 `text-badge-xs` 自带 700）；版本数值 `font-medium`→`font-bold`；诊断状态值加 `font-semibold`；Alert 标题与安装按钮升 `font-bold`
+- 验证：tsc 零错误；前端 26 文件 / 101 测试全绿；vite build 成功
+
 ### 设置界面排版阶梯移植 + 字重对比强化
 - **字体工具类移植**：src/index.css 新增字号令牌（--font-size-xxs~3xl：10/12/14/16/18/20/24/32/48px）与字重令牌（--font-weight-regular/medium/bold/extrabold + 语义映射）+ 工具类 `.heading-2xl/xl/lg/md`（800/700 字重）、`.text-body-nm`（16px/500）、`.text-body-sm`（14px/500）、`.text-caption-xs`（12px/500）、`.text-badge-xs`（12px/700）、`.text-micro-xxs`（10px/500）——AppSettingsModal/SettingsView 里 74 处既有用法从此获得真实定义
 - **字重对比强化**（用户：字更大、黑色重更明显）：ToggleRow 标题 16px 600→700；Checkbox 条目标签 15px 600→700；区块标题 18px 600→700（CheckboxGroup/SectionBlock/SettingCard）；全部说明文字 `--rx-fg`/65→/80（不透明度提升，更清晰）；Tab 导航选中态 font-bold（700）

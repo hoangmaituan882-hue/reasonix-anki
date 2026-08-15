@@ -122,7 +122,11 @@ html {
   font-size: 16px;
 }
 
-/* 标题工具类：对应 text-{n}xl + extrabold + leading-none + 主文字色 */
+/* 标题工具类：对应 text-{n}xl + extrabold + leading-none + 主文字色
+   ⚠️ 必须包在 @layer components 内：未分层样式优先级高于 Tailwind v4
+   的 @layer utilities，会把同元素的 font-bold(700) 压成 500（黑体失效）。
+   Tailwind v4 层序：theme < base < components < utilities。 */
+@layer components {
 .heading-2xl {
   font-size: var(--font-size-2xl); /* 32px */
   font-weight: var(--font-weight-heading); /* 800 */
@@ -182,4 +186,5 @@ html {
   font-size: var(--font-size-xxs); /* 10px */
   font-weight: var(--font-weight-medium); /* 500 */
   line-height: 1.3;
+}
 }

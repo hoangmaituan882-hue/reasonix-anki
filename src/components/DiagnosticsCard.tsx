@@ -6,6 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  cn,
 } from "@reasonix/ui";
 import { CircleCheck, CircleX, Loader2 } from "lucide-react";
 import { anki } from "../lib/anki/actions";
@@ -47,7 +48,7 @@ function CheckRow({
         {icon}
         {label}
       </span>
-      <span className={color}>{detail ?? (state === "ok" ? "正常" : state === "fail" ? "异常" : "检查中")}</span>
+      <span className={cn("font-semibold", color)}>{detail ?? (state === "ok" ? "正常" : state === "fail" ? "异常" : "检查中")}</span>
     </div>
   );
 }
@@ -106,7 +107,7 @@ export function DiagnosticsCard() {
   return (
     <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
       <CardHeader className="pb-2">
-        <CardTitle className="text-body-nm font-bold">连接诊断</CardTitle>
+        <CardTitle className="text-[18px] font-bold text-[var(--rx-fg)] leading-[1.4]">连接诊断</CardTitle>
         <CardDescription className="text-body-sm text-[var(--rx-fg-dim)]">
           逐项检查 Anki 与配套插件状态，用于排查连接问题
         </CardDescription>
@@ -149,7 +150,7 @@ export function DiagnosticsCard() {
         />
         <div className="flex items-center justify-between pt-2">
           <span className="text-caption-xs text-[var(--rx-fg-faint)]">内置插件版本</span>
-          <Badge variant="outline" className="text-badge-xs font-normal text-[var(--rx-fg-dim)]">
+          <Badge variant="outline" className="text-badge-xs text-[var(--rx-fg-dim)]">
             v{BUNDLED_ADDON_VERSION}
           </Badge>
         </div>

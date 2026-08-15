@@ -275,9 +275,11 @@ function Row({
           </ContextMenuItem>
 
           <ContextMenuItem onSelect={() => copyText(String(card.cardId), `已复制卡片 ID: ${card.cardId}`)}>
-            <Copy className="h-4 w-4 text-[var(--rx-fg-faint)]" />
-            <span>复制卡片 ID</span>
-            <ContextMenuShortcut>#{card.cardId}</ContextMenuShortcut>
+            <Copy className="h-4 w-4 shrink-0 text-[var(--rx-fg-faint)]" />
+            <span className="shrink-0 whitespace-nowrap">复制卡片 ID</span>
+            <ContextMenuShortcut title={`#${card.cardId}`}>
+              #{String(card.cardId).length > 7 ? `${String(card.cardId).slice(0, 6)}...` : card.cardId}
+            </ContextMenuShortcut>
           </ContextMenuItem>
 
           <ContextMenuSeparator />

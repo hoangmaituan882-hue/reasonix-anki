@@ -23,7 +23,7 @@ export function AboutCard() {
   return (
     <Card className="border-[var(--rx-border-soft)] bg-[var(--rx-card)]">
       <CardHeader className="pb-2">
-        <CardTitle className="text-body-nm font-bold">关于</CardTitle>
+        <CardTitle className="text-[18px] font-bold text-[var(--rx-fg)] leading-[1.4]">关于</CardTitle>
         <CardDescription className="text-body-sm text-[var(--rx-fg-dim)]">
           版本与构建信息
         </CardDescription>
@@ -31,7 +31,7 @@ export function AboutCard() {
       <CardContent className="space-y-1.5 text-body-sm">
         <div className="flex items-center justify-between">
           <span className="text-[var(--rx-fg-dim)]">应用版本</span>
-          <span className="font-medium">v{APP_VERSION}</span>
+          <span className="font-bold">v{APP_VERSION}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-[var(--rx-fg-dim)]">Git commit</span>

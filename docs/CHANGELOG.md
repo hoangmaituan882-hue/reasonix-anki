@@ -5,6 +5,9 @@
 
 ## 未发布（工作区）
 
+### 文档
+- **新增 `docs/LEARNING_HISTORY_SPEC.md`**：学习轨迹视图完整功能规格（定位/入口/数据契约/UI 结构 4.1-4.6/视觉纪律/重写边界/验收标准）——供 AI Studio 等 AI 重写 UI 时参考；明确「数据层与纯函数是稳定契约，UI 层可自由重写」边界
+
 ### 内置演示模式（无需 Anki 浏览完整 UI）
 - **新增 `lib/anki/demo.ts`**：演示模式开关（localStorage `ra.demoMode` 持久化，刷新保持）+ 全 action mock 数据表——3 个演示牌组（日语入门/N5 词汇/系统默认）、6 张日语演示卡（人間/先生/学校/本/時間/友達，含 question/answer/fields）、额度统计、近 26 周热力图数据（今天固定 12）、cardReviews 时间线（仅演示牌组返回，避免降级路径遍历牌组重复）、写操作成功形状
 - **transport.ankiCall 拦截**：演示模式所有 action 走 mock（视图层无感）；`useConnection` 演示模式跳过轮询直接 connected

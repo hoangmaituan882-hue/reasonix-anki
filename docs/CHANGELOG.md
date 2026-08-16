@@ -5,6 +5,22 @@
 
 ## 未发布（工作区）
 
+### 稳定性与性能批次（含 review 审查修复）
+- **App 根渲染性能**：新增 `useAnkiStatus()` 粗粒度连接 hook（利用 React Query v5 prop-tracking，3s 轮询 status 不变不触发整树重渲染）；`main.tsx` Query 全局 `staleTime: 30s`（切视图不重拉牌组数据；StatsView 的 stats.today/byDay 显式 `staleTime: 0` 保持挂载即重取）
+- **断线屏自治**：`DisconnectedScreen` 自取连接状态（error/refetch 内部化），App 不再传 props；测试改 mock hook
+- **牌组树右键「开始复习此牌组」**：`stores/app.ts` 新增 `pendingReviewDeck` 一次性注入 → ReviewView 消费（无条件清空防残留，仅 idle 自动开始——会话中注入即丢弃不隐式排队）
+- **复习流并发防护**：`stores/review.ts` 新增 `answering` in-flight 锁 + **会话代际 `sessionEpoch`**（start/exit 递增，in-flight 评分完成后 epoch 不匹配则丢弃本地记账——防旧评分污染新会话/复活已退出会话，epoch 比 cardId 校验可靠）；`ReviewSession` 键盘 `e.repeat` 过滤；`bury` 加 answering 守卫（评分 in-flight 禁止 bury，防记账不一致）
+- **localStorage 安全写入**：`lib/utils.ts` 新增 `safeSetItem`（隐私模式/配额满不抛异常），app store 5 处持久化切换
+- **伴学面板修复**：RichFieldRenderer 补 DOMPurify 消毒（XSS 防线）；`toggleTabVisibility`/`claimQuestReward`/`claimAllRewards` 副作用移出 updater（StrictMode double-invoke 防重复发奖励）+ ref 同步防闭包 stale；`{    try {` 排版修正
+- **统计视图**：HeatmapCell memo 化 + `loadSeq` 请求序号竞态守卫（含 watermark 读取后校验）+ useCallback 稳定回调 + **isFuture 早退移到全部 hook 之后**（修条件调用 hook 的 "Rendered more hooks" 崩溃风险）+ WEEK_DAYS 局部遮蔽死代码清理
+- **浏览重构**：CardTable/RowActions 提取 `useCardMutations` 共用 hook（右键 ContextMenu 与行尾 DropdownMenu 双入口共用，防实现漂移）
+- **新增 `lib/dompurify.ts`（卡片 HTML 统一消毒入口）**：DOMPurify 单例 + `uponSanitizeAttribute` hook——仅放行**媒体元素（img/audio/video/source/track）的 URI 属性（src/poster）blob: 值**。修复：DOMPurify 默认剥掉 blob: 媒体 URL（伴学面板/复习 CardRenderer 媒体静默失效，实测确认）；放行面收窄防 XSS（forceKeepAttr 在属性白名单之前执行，`onerror="blob:alert(1)"` 是合法 JS label 语句，若按"值以 blob: 开头"放行任意属性会在主文档执行——实证复现后修复）；CardRenderer/伴学面板统一改用该模块
+- **测试**：新增 `stores/review.test.ts`（epoch 竞态/失败复位 2 用例）；CardRenderer.test 补 blob: src 保留 + XSS 绕过（onerror='blob:...'/srcdoc 必须剥）断言；DeckTree.test mock 补 `setPendingReviewDeck`（否则点击菜单项即崩）；108 → **112 全绿**；tsc 零错误；vite build 成功
+- 本批次未触碰 `reasonix-addon/` 源码，无需 addon:sync
+
+### 文档
+- **新增 `docs/PROJECT_OVERVIEW.md`**：与 v0.2 现状一致的项目概览（基本信息/技术栈/双通道架构图/视图系统（6 导航视图 + 沉浸式学习会话视图）/Zustand stores/通信层/配套插件/数据与安全层/特色功能/UI-UX/准确项目结构树/全量开发命令/开发纪律与路线）——修正旧摘要中的过时表述：架构缺 reasonix-addon `:8766` 通道（v2 必要组件）、视图表漏 StudyView、`features/stats/` 目录实际不存在（StatsView.tsx 直属）、结构树漏 study/vocabulary/settings/achievements/icons 等目录、开发命令缺 `addon:sync` 等
+
 ### NumberTicker 数字滚动动画接入
 - **组件**：新增 `components/NumberTicker.tsx`（源自 beui.dev/motion/number：逐位数字滚动 + 入场错峰 + locale 千分位 + pad 补零 + 无障碍 sr-only）+ 3 测试；`lib/utils.ts` re-export `cn`
 - **接入 5 处**：StatsView 汇总卡、TodayDashboard 今日指标卡、StudyView 学习报告（完成/明日到期/四档分布）、AchievementWall 成就墙（进度/宝石/XP）——数值改用滚动动画，非数值保留原样

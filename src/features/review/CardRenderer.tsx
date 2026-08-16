@@ -1,4 +1,4 @@
-import DOMPurify from "dompurify";
+import { DOMPurify } from "../../lib/dompurify";
 import { Skeleton } from "@reasonix/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isLocalMediaSrc, peekMediaUrl, resolveMediaUrl } from "../../lib/media";

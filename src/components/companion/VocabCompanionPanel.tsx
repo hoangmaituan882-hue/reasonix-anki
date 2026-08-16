@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   BookOpen,
@@ -63,6 +63,7 @@ import { useDeckTree } from "../../lib/anki/query";
 import { anki } from "../../lib/anki/actions";
 import { type CardInfo } from "../../lib/anki/schemas";
 import { resolveMediaUrl, isLocalMediaSrc } from "../../lib/media";
+import { DOMPurify } from "../../lib/dompurify";
 
 interface VocabCompanionPanelProps {
   onClose: () => void;
@@ -156,7 +157,9 @@ function RichFieldRenderer({
         return full;
       });
 
-      setProcessedHtml(out);
+      // XSS 防线：Anki 卡字段是外部可控 HTML，注入主文档前必须 DOMPurify 消毒
+      //（保留 img/audio 媒体标签，剥除 on* 事件、javascript: URL、script）
+      setProcessedHtml(DOMPurify.sanitize(out));
     };
 
     void resolveAll();
@@ -263,6 +266,12 @@ export function VocabCompanionPanel({ onClose }: VocabCompanionPanelProps) {
     return DEFAULT_TAB_SETTINGS;
   });
 
+  // ref 同步最新 tabSettings：toggleTabVisibility 在 updater 外读当前值（避免闭包 stale）
+  const tabSettingsRef = useRef(tabSettings);
+  useEffect(() => {
+    tabSettingsRef.current = tabSettings;
+  }, [tabSettings]);
+
   useEffect(() => {
     try {
       localStorage.setItem("ra.companionTabConfig", JSON.stringify(tabSettings));
@@ -282,25 +291,25 @@ export function VocabCompanionPanel({ onClose }: VocabCompanionPanelProps) {
   const isSystemHidden = !tabSettings.find((t) => t.id === "system")?.visible;
 
   const toggleTabVisibility = (id: TabType) => {
-    setTabSettings((prev) => {
-      const target = prev.find((t) => t.id === id);
-      if (!target) return prev;
-      const currentlyVisibleCount = prev.filter((t) => t.visible).length;
-      if (target.visible && currentlyVisibleCount <= 1) {
-        setGamifyToast("⚠️ 至少需要保留一个可见标签页！");
-        setTimeout(() => setGamifyToast(null), 2500);
-        return prev;
-      }
+    const prev = tabSettingsRef.current;
+    const target = prev.find((t) => t.id === id);
+    if (!target) return;
+    const currentlyVisibleCount = prev.filter((t) => t.visible).length;
+    // 至少保留一个可见标签：副作用移出 updater（updater 必须纯函数，StrictMode 会 double-invoke）
+    if (target.visible && currentlyVisibleCount <= 1) {
+      setGamifyToast("⚠️ 至少需要保留一个可见标签页！");
+      setTimeout(() => setGamifyToast(null), 2500);
+      return;
+    }
 
-      const next = prev.map((t) => (t.id === id ? { ...t, visible: !t.visible } : t));
-      if (target.visible && activeTab === id) {
-        const remainingVisible = next.find((t) => t.visible);
-        if (remainingVisible) {
-          setActiveTab(remainingVisible.id);
-        }
+    const next = prev.map((t) => (t.id === id ? { ...t, visible: !t.visible } : t));
+    if (target.visible && activeTab === id) {
+      const remainingVisible = next.find((t) => t.visible);
+      if (remainingVisible) {
+        setActiveTab(remainingVisible.id);
       }
-      return next;
-    });
+    }
+    setTabSettings(next);
   };
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -438,6 +447,12 @@ export function VocabCompanionPanel({ onClose }: VocabCompanionPanelProps) {
     },
   ]);
 
+  // ref 同步最新 quests：claimQuestReward 在 updater 外读当前值
+  const questsRef = useRef(quests);
+  useEffect(() => {
+    questsRef.current = quests;
+  }, [quests]);
+
   // Vocab Review State
   const [reviewCards, setReviewCards] = useState<CardInfo[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -571,41 +586,32 @@ export function VocabCompanionPanel({ onClose }: VocabCompanionPanelProps) {
   };
 
   const claimQuestReward = (questId: string) => {
+    // 副作用移出 updater：updater 必须纯函数（StrictMode double-invoke 会把奖励发两次）
+    const quest = questsRef.current.find((q) => q.id === questId);
+    if (!quest || quest.claimed || quest.current < quest.target) return;
+    setUserGems((g) => g + quest.rewardGems);
+    setUserXp((x) => x + quest.rewardXp);
+    triggerToast(`🎉 成功领取【${quest.title}】！+${quest.rewardGems}💎 +${quest.rewardXp}XP`);
+    playVictorySound();
     setQuests((prev) =>
-      prev.map((q) => {
-        if (q.id === questId && !q.claimed && q.current >= q.target) {
-          setUserGems((g) => g + q.rewardGems);
-          setUserXp((x) => x + q.rewardXp);
-          triggerToast(`🎉 成功领取【${q.title}】！+${q.rewardGems}💎 +${q.rewardXp}XP`);
-          playVictorySound();
-          return { ...q, claimed: true };
-        }
-        return q;
-      })
+      prev.map((q) => (q.id === questId && !q.claimed ? { ...q, claimed: true } : q))
     );
   };
 
   const claimAllRewards = () => {
-    let totalGems = 0;
-    let totalXp = 0;
-    let count = 0;
+    // 先在外面基于最新 quests 计算可领奖励，再一次性更新（updater 内不做副作用）
+    const claimable = questsRef.current.filter((q) => !q.claimed && q.current >= q.target);
+    if (claimable.length === 0) return;
+    const totalGems = claimable.reduce((sum, q) => sum + q.rewardGems, 0);
+    const totalXp = claimable.reduce((sum, q) => sum + q.rewardXp, 0);
+    setUserGems((g) => g + totalGems);
+    setUserXp((x) => x + totalXp);
+    triggerToast(`🔥 一键连领！已完成 ${claimable.length} 项挑战，获 +${totalGems}💎 +${totalXp}XP`);
+    playVictorySound();
+    const claimableIds = new Set(claimable.map((q) => q.id));
     setQuests((prev) =>
-      prev.map((q) => {
-        if (!q.claimed && q.current >= q.target) {
-          totalGems += q.rewardGems;
-          totalXp += q.rewardXp;
-          count++;
-          return { ...q, claimed: true };
-        }
-        return q;
-      })
+      prev.map((q) => (claimableIds.has(q.id) ? { ...q, claimed: true } : q))
     );
-    if (count > 0) {
-      setUserGems((g) => g + totalGems);
-      setUserXp((x) => x + totalXp);
-      triggerToast(`🔥 一键连领！已完成 ${count} 项挑战，获 +${totalGems}💎 +${totalXp}XP`);
-      playVictorySound();
-    }
   };
 
   const buyShopItem = (itemType: "freeze" | "doubleXp" | "box", cost: number) => {

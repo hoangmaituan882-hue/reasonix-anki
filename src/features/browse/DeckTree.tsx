@@ -42,6 +42,7 @@ interface Props {
 export function DeckTree({ decks, stats, configs, selected, onSelect, loading }: Props) {
   const deckNames = Object.keys(decks);
   const setView = useAppStore((s) => s.setView);
+  const setPendingReviewDeck = useAppStore((s) => s.setPendingReviewDeck);
   const openNewNote = useEditorStore((s) => s.openNewNote);
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(deckNames.map((name) => name.split("::")[0])),
@@ -154,7 +155,12 @@ export function DeckTree({ decks, stats, configs, selected, onSelect, loading }:
           <ContextMenuContent className="w-56">
             <ContextMenuLabel>{node.fullName}</ContextMenuLabel>
 
-            <ContextMenuItem onSelect={() => { setView("review"); }}>
+            <ContextMenuItem
+              onSelect={() => {
+                setPendingReviewDeck(node.fullName);
+                setView("review");
+              }}
+            >
               <Play className="h-4 w-4 text-[var(--rx-accent)] fill-[var(--rx-accent)]" />
               <span>开始复习此牌组</span>
               <ContextMenuShortcut>R</ContextMenuShortcut>

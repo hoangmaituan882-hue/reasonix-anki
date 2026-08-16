@@ -39,7 +39,7 @@ import {
 } from "@reasonix/ui";
 import { NumberTicker } from "../components/NumberTicker";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, memo, useRef, useState, type ReactNode } from "react";
 import { toast, toastError } from "../components/ToasterLite";
 import { anki } from "../lib/anki/actions";
 import { useDeckTree } from "../lib/anki/query";
@@ -73,6 +73,8 @@ import {
 /** 全局或单牌组两种口径：全局走 getNumCardsReviewedByDay，单牌组走本地 SQLite */
 type Scope = "global" | string; // string = deckName
 
+const WEEK_DAYS = ["一", "二", "三", "四", "五", "六", "日"];
+
 export function StatsView() {
   const decksQ = useDeckTree();
   const decks = decksQ.data?.decks ?? {};
@@ -83,15 +85,20 @@ export function StatsView() {
   const [daily, setDaily] = useState<Map<string, number>>(new Map());
   const [watermark, setWatermark] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  // 单牌组加载请求序号：快速切换 scope 时旧请求不覆盖新结果
+  const loadSeq = useRef(0);
 
   const todayQ = useQuery({
     queryKey: ["stats", "today"],
     queryFn: () => anki.getNumCardsReviewedToday(),
+    // 复习会话结束会刷新牌组数据，但本计数不在失效范围；挂载即重取保持新鲜（不继承全局 30s staleTime）
+    staleTime: 0,
   });
   const globalQ = useQuery({
     queryKey: ["stats", "byDay"],
     queryFn: () => anki.getNumCardsReviewedByDay(),
     enabled: scope === "global",
+    staleTime: 0,
   });
 
   const selectedDeckId = scope !== "global" ? decks[scope] : undefined;
@@ -106,6 +113,7 @@ export function StatsView() {
 
   // 单牌组口径：先增量同步，再读本地聚合表
   const loadDeck = async (name: string, id: number, rebuild = false) => {
+    const seq = ++loadSeq.current; // 递增请求序号：旧请求结果不再覆盖新 scope
     setBusy(true);
     try {
       if (rebuild) {
@@ -117,13 +125,17 @@ export function StatsView() {
           toast({ title: "已增量同步", description: `${name} · 新增 ${inserted} 条复习记录` });
         }
       }
+      if (seq !== loadSeq.current) return; // 已被更新的请求取代
       const rows = await getDaily(id);
+      if (seq !== loadSeq.current) return;
       setDaily(new Map(rows.map((r) => [r.date, r.reviews])));
-      setWatermark(await getWatermark(id));
+      const wm = await getWatermark(id);
+      if (seq !== loadSeq.current) return;
+      setWatermark(wm);
     } catch (e) {
       toastError("统计加载失败", e);
     } finally {
-      setBusy(false);
+      if (seq === loadSeq.current) setBusy(false);
     }
   };
 
@@ -351,7 +363,6 @@ function DayStatsDetailDialog({
   if (!date) return null;
 
   const dateObj = new Date(date);
-  const WEEK_DAYS = ["一", "二", "三", "四", "五", "六", "日"];
   const dayOfWeekStr = `周${WEEK_DAYS[(dateObj.getDay() + 6) % 7]}`;
 
   const totalReviews = detail?.reviews ?? count;
@@ -572,7 +583,7 @@ function DayStatsDetailDialog({
 
 /* ---------------- 热力格单元组件（支持流体注水与经典方格） ---------------- */
 
-function HeatmapCell({
+const HeatmapCell = memo(function HeatmapCellInner({
   count,
   target,
   themeConfig,
@@ -588,7 +599,6 @@ function HeatmapCell({
   weeks,
   isFuture,
   date,
-  dayOfWeekStr,
   scope,
   onSearchCards,
   onViewDetails,
@@ -603,31 +613,18 @@ function HeatmapCell({
   waveSpeed: "slow" | "normal" | "fast";
   showDayNumber: boolean;
   dayNum: number;
-  onHover: () => void;
+  onHover: (info: { date: string; count: number; dayOfWeek: string; fillPercent: number }) => void;
   onLeave: () => void;
   weeks: TimeRange;
   isFuture?: boolean;
   date: string;
-  dayOfWeekStr: string;
   scope: Scope;
   onSearchCards: (date: string) => void;
   onViewDetails: (date: string, count: number) => void;
 }) {
-  if (isFuture) {
-    return (
-      <div
-        className={cn(
-          "w-full aspect-square opacity-0 pointer-events-none",
-          weeks === 13
-            ? "rounded-md sm:rounded-lg"
-            : weeks === 26
-            ? "rounded-[3px] sm:rounded-md"
-            : "rounded-[2px] sm:rounded-[3px]"
-        )}
-      />
-    );
-  }
-
+  // Hook 必须先于任何早退执行（Rules of Hooks）：isFuture 早退放在全部 hook 之后，
+  // 否则同一实例 isFuture 翻转（跨午夜 + daily 更新）时 hook 数量变化会触发
+  // "Rendered more hooks" 崩溃。isFuture 分支仅消耗少量无效 useMemo 计算，无副作用。
   const hasCount = count > 0;
   // 水位线百分比计算：至少 16% 保障微量刷卡可见，满目标 100% 溢满
   const fillPercent = hasCount
@@ -665,10 +662,32 @@ function HeatmapCell({
     return scope !== "global" ? `deck:"${scope}"` : "";
   }, [date, scope]);
 
+  if (isFuture) {
+    return (
+      <div
+        className={cn(
+          "w-full aspect-square opacity-0 pointer-events-none",
+          weeks === 13
+            ? "rounded-md sm:rounded-lg"
+            : weeks === 26
+            ? "rounded-[3px] sm:rounded-md"
+            : "rounded-[2px] sm:rounded-[3px]"
+        )}
+      />
+    );
+  }
+
   // 1. 经典普通纯色方格模式（GitHub / Anki 原生经典质感，支持 Wave Reveal 波浪式揭示动画）
   const classicCellNode = heatmapStyle === "classic" ? (
     <div
-      onMouseEnter={onHover}
+      onMouseEnter={() =>
+        onHover({
+          date,
+          count,
+          dayOfWeek: `周${WEEK_DAYS[(new Date(date).getDay() + 6) % 7]}`,
+          fillPercent: Math.min(100, Math.round((count / target) * 100)),
+        })
+      }
       onMouseLeave={onLeave}
       className={cn(
         "w-full aspect-square cursor-pointer flex items-center justify-center select-none transition-all duration-150 hover:scale-115 hover:z-10 shadow-2xs",
@@ -704,7 +723,14 @@ function HeatmapCell({
   ) : (
     /* 2. 现代流体注水模式（动态水杯注水、双层水纹波浪与满水溢光） */
     <div
-      onMouseEnter={onHover}
+      onMouseEnter={() =>
+        onHover({
+          date,
+          count,
+          dayOfWeek: `周${WEEK_DAYS[(new Date(date).getDay() + 6) % 7]}`,
+          fillPercent: Math.min(100, Math.round((count / target) * 100)),
+        })
+      }
       onMouseLeave={onLeave}
       className={cn(
         "rx-liquid-cell w-full aspect-square cursor-pointer flex items-center justify-center select-none shadow-2xs border border-[var(--rx-border-soft)]",
@@ -775,7 +801,7 @@ function HeatmapCell({
       </ContextMenuTrigger>
       <ContextMenuContent className="w-64">
         <ContextMenuLabel className="font-mono text-2xs">
-          📅 {date} ({dayOfWeekStr}) · {count} 张复习
+          📅 {date} ({`周${WEEK_DAYS[(new Date(date).getDay() + 6) % 7]}`}) · {count} 张复习
         </ContextMenuLabel>
         <ContextMenuSeparator />
         <ContextMenuItem
@@ -816,7 +842,7 @@ function HeatmapCell({
       </ContextMenuContent>
     </ContextMenu>
   );
-}
+});
 
 /* ---------------- 优化升级后的热力图主组件 ---------------- */
 
@@ -859,35 +885,46 @@ function Heatmap({
     fillPercent: number;
   } | null>(null);
 
-  const handleSearchCards = (date: string) => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const cellDate = new Date(date);
-    cellDate.setHours(0, 0, 0, 0);
-    const diffDays = Math.round((now.getTime() - cellDate.getTime()) / (1000 * 60 * 60 * 24));
+  const handleSearchCards = useCallback(
+    (date: string) => {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const cellDate = new Date(date);
+      cellDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((now.getTime() - cellDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    let q = "";
-    if (diffDays === 0) {
-      q = scope !== "global" ? `deck:"${scope}" rated:1` : `rated:1`;
-    } else if (diffDays > 0) {
-      q = scope !== "global"
-        ? `deck:"${scope}" rated:${diffDays + 1} -rated:${diffDays}`
-        : `rated:${diffDays + 1} -rated:${diffDays}`;
-    } else {
-      q = scope !== "global" ? `deck:"${scope}"` : "";
-    }
+      let q = "";
+      if (diffDays === 0) {
+        q = scope !== "global" ? `deck:"${scope}" rated:1` : `rated:1`;
+      } else if (diffDays > 0) {
+        q = scope !== "global"
+          ? `deck:"${scope}" rated:${diffDays + 1} -rated:${diffDays}`
+          : `rated:${diffDays + 1} -rated:${diffDays}`;
+      } else {
+        q = scope !== "global" ? `deck:"${scope}"` : "";
+      }
 
-    setBrowseQuery(q);
-    setView("browse");
-    toast({
-      title: `🔍 已跳转至牌组浏览器`,
-      description: `检索语句: ${q}`,
-    });
-  };
+      setBrowseQuery(q);
+      setView("browse");
+      toast({
+        title: `🔍 已跳转至牌组浏览器`,
+        description: `检索语句: ${q}`,
+      });
+    },
+    [scope, setBrowseQuery, setView],
+  );
 
-  const handleViewDetails = (date: string, count: number) => {
+  const handleViewDetails = useCallback((date: string, count: number) => {
     setDetailDate({ date, count });
-  };
+  }, []);
+
+  const handleCellHover = useCallback(
+    (cell: { date: string; count: number; dayOfWeek: string; fillPercent: number }) => {
+      setHoveredCell(cell);
+    },
+    [],
+  );
+  const handleCellLeave = useCallback(() => setHoveredCell(null), []);
 
   // 计算热力图网格、月份标记与连胜指标
   const { grid, max, monthHeaders, streakStats } = useMemo(() => {
@@ -1002,8 +1039,6 @@ function Heatmap({
       },
     };
   }, [daily, weeks]);
-
-  const WEEK_DAYS = ["一", "二", "三", "四", "五", "六", "日"];
 
   return (
     <div className="space-y-4">
@@ -1281,9 +1316,7 @@ function Heatmap({
                 {col.map((cell, cIdx) => {
                   const count = cell.count;
                   const dateObj = new Date(cell.date);
-                  const dayOfWeekStr = `周${WEEK_DAYS[(dateObj.getDay() + 6) % 7]}`;
                   const dayNum = dateObj.getDate();
-                  const fillPct = Math.min(100, Math.round((count / targetDaily) * 100));
                   const waveDelayMs = i * 12 + cIdx * 18;
 
                   return (
@@ -1302,19 +1335,11 @@ function Heatmap({
                       weeks={weeks}
                       isFuture={cell.isFuture}
                       date={cell.date}
-                      dayOfWeekStr={dayOfWeekStr}
                       scope={scope}
                       onSearchCards={handleSearchCards}
                       onViewDetails={handleViewDetails}
-                      onHover={() =>
-                        setHoveredCell({
-                          date: cell.date,
-                          count: cell.count,
-                          dayOfWeek: dayOfWeekStr,
-                          fillPercent: fillPct,
-                        })
-                      }
-                      onLeave={() => setHoveredCell(null)}
+                      onHover={handleCellHover}
+                      onLeave={handleCellLeave}
                     />
                   );
                 })}

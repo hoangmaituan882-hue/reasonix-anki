@@ -1,13 +1,10 @@
 import { RefreshCw } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@reasonix/ui";
-
-interface Props {
-  error?: string;
-  onRetry: () => void;
-}
+import { useAnkiConnection } from "../lib/anki/useConnection";
 
 /** 断线引导屏（技术方案 §7：连接状态机 + 引导） */
-export function DisconnectedScreen({ error, onRetry }: Props) {
+export function DisconnectedScreen() {
+  const connection = useAnkiConnection();
   return (
     <div className="flex h-full items-center justify-center p-8">
       <Card className="w-full max-w-md rx-anim-modal">
@@ -54,10 +51,15 @@ export function DisconnectedScreen({ error, onRetry }: Props) {
               </span>
             </li>
           </ol>
-          {error ? (
-            <p className="text-xs text-[var(--rx-fg-faint)]">最近错误：{error}</p>
+          {connection.error ? (
+            <p className="text-xs text-[var(--rx-fg-faint)]">最近错误：{connection.error}</p>
           ) : null}
-          <Button variant="outline" size="sm" onClick={onRetry} className="rx-press">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void connection.refetch()}
+            className="rx-press"
+          >
             <RefreshCw className="h-3.5 w-3.5" />
             立即重试
           </Button>

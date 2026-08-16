@@ -27,6 +27,8 @@ interface ReviewState {
   answered: AnsweredRecord[];
   buriedSession: number[]; // 本次会话 bury 的 cardId（展示用）
   starting: boolean;
+  /** answer 提交 in-flight：防键盘 repeat/连点对同一卡并发评分（revlog 损坏） */
+  answering: boolean;
   error: string | null;
 
   start: (deck: string) => Promise<void>;
@@ -55,6 +57,13 @@ function saveBuried(set: Set<number>): void {
 }
 
 let buriedToday = loadBuried();
+
+/**
+ * 会话代际标识：每次 start/exit 递增。answer 在 await 前捕获当前代际，
+ * 完成后对比——in-flight 期间会话退出/重启（即使同牌组、队列含同 cardId）
+ * 则丢弃本地记账，防止旧评分污染新会话（跳过新会话队首卡 / 复活已退出会话）。
+ */
+let sessionEpoch = 0;
 
 /* ---------- 工具 ---------- */
 
@@ -86,10 +95,12 @@ export const useReviewStore = create<ReviewState>()((set, get) => ({
   answered: [],
   buriedSession: [],
   starting: false,
+  answering: false,
   error: null,
 
   start: async (deck) => {
-    set({ starting: true, error: null, deck });
+    sessionEpoch += 1; // 新会话代际
+    set({ starting: true, error: null, deck, answering: false });
     try {
       const ids = await anki.findCards(`deck:"${deck}" is:due`);
       if (ids.length === 0) {
@@ -131,25 +142,35 @@ export const useReviewStore = create<ReviewState>()((set, get) => ({
   },
 
   answer: async (ease) => {
-    const { queue, index, phase } = get();
+    const { queue, index, phase, answering } = get();
     const card = queue[index];
-    if (!card || phase !== "answer") return;
+    if (!card || phase !== "answer" || answering) return; // answering 防键盘 repeat/连点并发评分
+    const epoch = sessionEpoch; // 捕获本会话代际
+    set({ answering: true });
     try {
       await anki.answerCards([{ cardId: card.cardId, ease }]);
     } catch (e) {
       toastError("评分提交失败，请重试", e);
+      set({ answering: false });
       return; // 停留在当前卡，允许重试
     }
+    // in-flight 期间会话已退出/重启（epoch 不匹配）：只复位锁，丢弃本地记账
+    if (epoch !== sessionEpoch) {
+      if (get().answering) set({ answering: false });
+      return;
+    }
     set((s) => ({
+      answering: false,
       answered: [...s.answered, { cardId: card.cardId, ease }],
       ...advance(s),
     }));
   },
 
   bury: () => {
-    const { queue, index, phase } = get();
+    const { queue, index, phase, answering } = get();
     const card = queue[index];
-    if (!card || (phase !== "question" && phase !== "answer")) return;
+    // answering 时禁止 bury：评分 in-flight（已提交 Anki）时本地 bury 会造成记账不一致
+    if (!card || (phase !== "question" && phase !== "answer") || answering) return;
     // 会话内 bury：仅本地过滤，不触碰 Anki 调度数据（技术方案 §5.3 第 5 条）
     buriedToday.add(card.cardId);
     saveBuried(buriedToday);
@@ -163,8 +184,10 @@ export const useReviewStore = create<ReviewState>()((set, get) => ({
     }));
   },
 
-  exit: () =>
-    set({ phase: "idle", queue: [], index: 0, answered: [], deck: null }),
+  exit: () => {
+    sessionEpoch += 1; // 退出即作废 in-flight answer
+    set({ phase: "idle", queue: [], index: 0, answered: [], deck: null, answering: false });
+  },
 }));
 
 /** 当前卡（便捷选择器） */

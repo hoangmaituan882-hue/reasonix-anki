@@ -12,6 +12,8 @@ const queryClient = new QueryClient({
       // Anki 即后端：默认不自动重取，由各处显式控制
       refetchOnWindowFocus: false,
       retry: false,
+      // 30s 内复用缓存：切视图（卸载→重挂载）不再重拉 deckNamesAndIds/getDeckStats 等
+      staleTime: 30_000,
     },
   },
 });

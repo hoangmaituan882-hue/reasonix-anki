@@ -3,6 +3,7 @@
  * 桌面单窗口无路由库，currentView 状态驱动；主题默认 graphite + 暗。
  */
 import { create } from "zustand";
+import { safeSetItem } from "../lib/utils";
 
 export type View = "today" | "browse" | "editor" | "review" | "stats" | "settings";
 
@@ -47,6 +48,8 @@ interface AppState {
   rightPanelOpen: boolean;
   /** 统计热力图「在浏览中检索」：切换到浏览视图时注入的初始查询 */
   browseQuery: string | null;
+  /** 牌组树「开始复习此牌组」：切换到复习视图时注入的初始牌组 */
+  pendingReviewDeck: string | null;
   setView: (view: View) => void;
   setDirection: (direction: Direction) => void;
   toggleDark: () => void;
@@ -54,6 +57,7 @@ interface AppState {
   setRoundedCorners: (enabled: boolean) => void;
   toggleRightPanel: () => void;
   setBrowseQuery: (query: string | null) => void;
+  setPendingReviewDeck: (deck: string | null) => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -73,38 +77,41 @@ export const useAppStore = create<AppState>()((set, get) => ({
   roundedCorners: load<boolean>("ra.roundedCorners", true),
   rightPanelOpen: load<boolean>("ra.rightPanelOpen", true),
   browseQuery: null,
+  pendingReviewDeck: null,
 
   setView: (view) => set({ view }),
 
   setDirection: (direction) => {
-    localStorage.setItem("ra.direction", JSON.stringify(direction));
+    safeSetItem("ra.direction", JSON.stringify(direction));
     set({ direction });
   },
 
   toggleDark: () => {
     const dark = !get().dark;
-    localStorage.setItem("ra.dark", JSON.stringify(dark));
+    safeSetItem("ra.dark", JSON.stringify(dark));
     set({ dark });
   },
 
   toggleSidebar: () => {
     const sidebarCollapsed = !get().sidebarCollapsed;
-    localStorage.setItem("ra.sidebarCollapsed", JSON.stringify(sidebarCollapsed));
+    safeSetItem("ra.sidebarCollapsed", JSON.stringify(sidebarCollapsed));
     set({ sidebarCollapsed });
   },
 
   setRoundedCorners: (roundedCorners) => {
-    localStorage.setItem("ra.roundedCorners", JSON.stringify(roundedCorners));
+    safeSetItem("ra.roundedCorners", JSON.stringify(roundedCorners));
     set({ roundedCorners });
   },
 
   toggleRightPanel: () => {
     const rightPanelOpen = !get().rightPanelOpen;
-    localStorage.setItem("ra.rightPanelOpen", JSON.stringify(rightPanelOpen));
+    safeSetItem("ra.rightPanelOpen", JSON.stringify(rightPanelOpen));
     set({ rightPanelOpen });
   },
 
   setBrowseQuery: (browseQuery) => set({ browseQuery }),
+
+  setPendingReviewDeck: (pendingReviewDeck) => set({ pendingReviewDeck }),
 }));
 
 /** 把主题状态同步到 <html>（data-direction + .dark） */

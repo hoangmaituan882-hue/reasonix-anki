@@ -11,10 +11,11 @@ import {
   CardTitle,
   Skeleton,
 } from "@reasonix/ui";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useDeckTree } from "../lib/anki/query";
 import type { DeckStats } from "../lib/anki/schemas";
 import { useReviewStore } from "../stores/review";
+import { useAppStore } from "../stores/app";
 import { ReviewSession } from "./review/ReviewSession";
 
 /**
@@ -23,6 +24,17 @@ import { ReviewSession } from "./review/ReviewSession";
  */
 export function ReviewView() {
   const phase = useReviewStore((s) => s.phase);
+  const start = useReviewStore((s) => s.start);
+  const pendingReviewDeck = useAppStore((s) => s.pendingReviewDeck);
+  const setPendingReviewDeck = useAppStore((s) => s.setPendingReviewDeck);
+
+  // 牌组树「开始复习此牌组」：消费一次性注入的牌组名。
+  // 无条件清空（防残留）；仅 idle 时自动开始——会话进行中注入则丢弃，不隐式排队。
+  useEffect(() => {
+    if (pendingReviewDeck == null) return;
+    setPendingReviewDeck(null);
+    if (phase === "idle") void start(pendingReviewDeck);
+  }, [pendingReviewDeck, phase, start, setPendingReviewDeck]);
 
   if (phase === "question" || phase === "answer") return <ReviewSession />;
   if (phase === "done") return <CompletionScreen />;

@@ -59,4 +59,27 @@ describe("CardRenderer processHtml LRU 缓存", () => {
 
     expect(resolveMediaUrlMock).toHaveBeenCalledTimes(0); // 无媒体，但两模式各自处理
   });
+
+  it("安全模式保留 blob: 媒体 src（hook 注册），剥 on* 事件与 javascript: URL", async () => {
+    const html =
+      '<div><img src="pic.jpg" onerror="alert(1)"><audio src="kaigi.mp3"></audio><a href="javascript:alert(1)">x</a></div>';
+    const { html: out } = await processHtml(html, [], false);
+
+    // blob: object URL（resolveMediaUrl 产物）不被 DOMPurify 剥掉
+    expect(out).toContain('src="blob:pic.jpg"');
+    expect(out).toContain('src="blob:kaigi.mp3"');
+    // 默认消毒规则仍然生效
+    expect(out).not.toContain("onerror");
+    expect(out).not.toContain("javascript:");
+  });
+
+  it("blob: 钩子不放行 on* 事件属性（onerror='blob:...' 是合法 JS label 语句，不得保留）", async () => {
+    const html = '<img src="pic.jpg" onerror="blob:alert(1)"><video srcdoc="blob:alert(1)"></video>';
+    const { html: out } = await processHtml(html, [], false);
+
+    // 媒体 blob: src 保留（钩子目标），但事件属性/srcdoc 必须被剥
+    expect(out).toContain('src="blob:pic.jpg"');
+    expect(out).not.toContain("onerror");
+    expect(out).not.toContain("srcdoc");
+  });
 });

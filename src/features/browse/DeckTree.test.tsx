@@ -3,7 +3,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { DeckTree } from "./DeckTree";
 
 vi.mock("../../stores/app", () => ({
-  useAppStore: (fn: (s: unknown) => unknown) => fn({ setView: vi.fn() }),
+  useAppStore: (fn: (s: unknown) => unknown) =>
+    fn({ setView: vi.fn(), setPendingReviewDeck: vi.fn() }),
 }));
 vi.mock("../../stores/editor", () => ({
   useEditorStore: (fn: (s: unknown) => unknown) => fn({ openNewNote: vi.fn() }),

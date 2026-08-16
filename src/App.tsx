@@ -19,7 +19,7 @@ import { SettingsView } from "./features/SettingsView";
 import { StatsView } from "./features/StatsView";
 import { StudyView } from "./features/study/StudyView";
 import { TodayView } from "./features/today/TodayView";
-import { useAnkiConnection } from "./lib/anki/useConnection";
+import { useAnkiStatus } from "./lib/anki/useConnection";
 import { inTauri } from "./lib/anki/transport";
 import { applyTheme, useAppStore, viewTitle } from "./stores/app";
 import { useStudySessionStore } from "./stores/studySession";
@@ -90,7 +90,7 @@ function HeaderCompanionButton({
 function App() {
   const { view, setView, direction, dark, roundedCorners, rightPanelOpen, toggleRightPanel } =
     useAppStore();
-  const connection = useAnkiConnection();
+  const connectionStatus = useAnkiStatus();
   const studyPhase = useStudySessionStore((state) => state.phase);
   const studySessionId = useStudySessionStore((state) => state.sessionId);
   const studyDeckName = useStudySessionStore((state) => state.deckName);
@@ -191,7 +191,7 @@ function App() {
           >
             <h1 className="text-sm font-semibold">{viewTitle(view)}</h1>
             <div className="flex items-center gap-2">
-              {connection.status === "connected" && (
+              {connectionStatus === "connected" && (
                 <HeaderCompanionButton
                   active={rightPanelOpen}
                   onClick={toggleRightPanel}
@@ -206,11 +206,8 @@ function App() {
           <main className="min-h-0 flex-1 overflow-y-auto">
             {view === "settings" ? (
               <SettingsView />
-            ) : connection.status !== "connected" ? (
-              <DisconnectedScreen
-                error={connection.error}
-                onRetry={() => void connection.refetch()}
-              />
+            ) : connectionStatus !== "connected" ? (
+              <DisconnectedScreen />
             ) : (
               <>
                 {view === "today" && <TodayView />}
@@ -227,7 +224,7 @@ function App() {
         <NoteEditorSheet />
         <NewNoteDialog />
         <AnimatePresence>
-          {connection.status === "connected" && rightPanelOpen && (
+          {connectionStatus === "connected" && rightPanelOpen && (
             <VocabCompanionPanel onClose={toggleRightPanel} />
           )}
         </AnimatePresence>

@@ -34,10 +34,10 @@ function useInvalidateBrowse() {
 }
 
 /**
- * 行操作菜单：暂停/恢复 · 改期 · 删除（技术方案 §5.1 行操作）
- * 改期/删除均为明确确认后才触达 Anki 调度数据。
+ * 卡片行写操作共用 hook（右键 ContextMenu 与行尾 DropdownMenu 两处入口共用，
+ * 避免 mutation/Dialog 双份实现漂移）
  */
-export function RowActions({ card }: { card: CardInfo }) {
+export function useCardMutations(card: CardInfo) {
   const invalidate = useInvalidateBrowse();
   const openEditor = useEditorStore((s) => s.openEditor);
   const suspended = card.queue === -1;
@@ -75,6 +75,40 @@ export function RowActions({ card }: { card: CardInfo }) {
     },
     onError: (e) => toastError("删除失败", e),
   });
+
+  return {
+    suspended,
+    openEditor,
+    suspendMut,
+    dueMut,
+    delMut,
+    dueOpen,
+    setDueOpen,
+    days,
+    setDays,
+    delOpen,
+    setDelOpen,
+  };
+}
+
+/**
+ * 行操作菜单：暂停/恢复 · 改期 · 删除（技术方案 §5.1 行操作）
+ * 改期/删除均为明确确认后才触达 Anki 调度数据。
+ */
+export function RowActions({ card }: { card: CardInfo }) {
+  const {
+    suspended,
+    openEditor,
+    suspendMut,
+    dueMut,
+    delMut,
+    dueOpen,
+    setDueOpen,
+    days,
+    setDays,
+    delOpen,
+    setDelOpen,
+  } = useCardMutations(card);
 
   return (
     <div onClick={(e) => e.stopPropagation()}>

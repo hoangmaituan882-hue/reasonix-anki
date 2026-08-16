@@ -23,14 +23,10 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCardSearch, PAGE_SIZE, queryKeys } from "../../lib/anki/query";
+import { useCardSearch, PAGE_SIZE } from "../../lib/anki/query";
 import type { CardInfo } from "../../lib/anki/schemas";
 import { dueLabel, frontText } from "./browseUtil";
-import { RowActions } from "./RowActions";
-import { anki } from "../../lib/anki/actions";
-import { useEditorStore } from "../../stores/editor";
+import { RowActions, useCardMutations } from "./RowActions";
 import { toast, toastError } from "../../components/ToasterLite";
 import {
   ContextMenu,
@@ -160,48 +156,19 @@ function Row({
   selected: boolean;
   onClick: () => void;
 }) {
-  const qc = useQueryClient();
-  const openEditor = useEditorStore((s) => s.openEditor);
-  const suspended = card.queue === -1;
-
-  const [dueOpen, setDueOpen] = useState(false);
-  const [days, setDays] = useState("1");
-  const [delOpen, setDelOpen] = useState(false);
-
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: queryKeys.decks });
-    qc.invalidateQueries({ queryKey: queryKeys.cardsPrefix });
-  };
-
-  const suspendMut = useMutation({
-    mutationFn: () =>
-      suspended ? anki.unsuspend([card.cardId]) : anki.suspend([card.cardId]),
-    onSuccess: () => {
-      toast({ title: suspended ? "已恢复卡片" : "已暂停卡片" });
-      invalidate();
-    },
-    onError: (e) => toastError("操作失败", e),
-  });
-
-  const dueMut = useMutation({
-    mutationFn: () => anki.setDueDate([card.cardId], days.trim()),
-    onSuccess: () => {
-      toast({ title: `已改期：${days.trim()}` });
-      setDueOpen(false);
-      invalidate();
-    },
-    onError: (e) => toastError("改期失败", e),
-  });
-
-  const delMut = useMutation({
-    mutationFn: () => anki.deleteNotes([card.note]),
-    onSuccess: () => {
-      toast({ title: "已删除笔记及其全部卡片" });
-      setDelOpen(false);
-      invalidate();
-    },
-    onError: (e) => toastError("删除失败", e),
-  });
+  const {
+    suspended,
+    openEditor,
+    suspendMut,
+    dueMut,
+    delMut,
+    dueOpen,
+    setDueOpen,
+    days,
+    setDays,
+    delOpen,
+    setDelOpen,
+  } = useCardMutations(card);
 
   const copyText = (text: string, msg: string) => {
     navigator.clipboard.writeText(text).then(

@@ -76,6 +76,7 @@ export function ReviewSession() {
         return;
       }
       const currentPhase = useReviewStore.getState().phase;
+      if (e.repeat) return; // 键盘按住连发不重复触发评分
       if (currentPhase === "question" && (e.key === " " || e.key === "Enter")) {
         e.preventDefault();
         reveal();

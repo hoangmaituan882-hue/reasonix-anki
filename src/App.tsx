@@ -17,6 +17,7 @@ import { NoteEditorSheet } from "./features/editor/NoteEditorSheet";
 import { ReviewView } from "./features/ReviewView";
 import { SettingsView } from "./features/SettingsView";
 import { StatsView } from "./features/StatsView";
+import { HistoryView } from "./features/history/HistoryView";
 import { StudyView } from "./features/study/StudyView";
 import { TodayView } from "./features/today/TodayView";
 import { useAnkiStatus } from "./lib/anki/useConnection";
@@ -215,6 +216,7 @@ function App() {
                 {view === "editor" && <EditorView />}
                 {view === "review" && <ReviewView />}
                 {view === "stats" && <StatsView />}
+                {view === "history" && <HistoryView />}
               </>
             )}
           </main>

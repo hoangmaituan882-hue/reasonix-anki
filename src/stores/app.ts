@@ -5,7 +5,14 @@
 import { create } from "zustand";
 import { safeSetItem } from "../lib/utils";
 
-export type View = "today" | "browse" | "editor" | "review" | "stats" | "settings";
+export type View =
+  | "today"
+  | "browse"
+  | "editor"
+  | "review"
+  | "stats"
+  | "settings"
+  | "history";
 
 export type Direction =
   | "graphite"
@@ -31,6 +38,7 @@ const VIEW_TITLES: Record<View, string> = {
   review: "复习",
   stats: "统计概览",
   settings: "系统设置",
+  history: "学习轨迹",
 };
 
 export function viewTitle(view: View): string {
@@ -50,6 +58,8 @@ interface AppState {
   browseQuery: string | null;
   /** 牌组树「开始复习此牌组」：切换到复习视图时注入的初始牌组 */
   pendingReviewDeck: string | null;
+  /** 学习轨迹视图：注入的初始日期（YYYY-MM-DD；null = 默认今天） */
+  historyDate: string | null;
   setView: (view: View) => void;
   setDirection: (direction: Direction) => void;
   toggleDark: () => void;
@@ -58,6 +68,7 @@ interface AppState {
   toggleRightPanel: () => void;
   setBrowseQuery: (query: string | null) => void;
   setPendingReviewDeck: (deck: string | null) => void;
+  setHistoryDate: (date: string | null) => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -78,6 +89,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   rightPanelOpen: load<boolean>("ra.rightPanelOpen", true),
   browseQuery: null,
   pendingReviewDeck: null,
+  historyDate: null,
 
   setView: (view) => set({ view }),
 
@@ -112,6 +124,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setBrowseQuery: (browseQuery) => set({ browseQuery }),
 
   setPendingReviewDeck: (pendingReviewDeck) => set({ pendingReviewDeck }),
+
+  setHistoryDate: (historyDate) => set({ historyDate }),
 }));
 
 /** 把主题状态同步到 <html>（data-direction + .dark） */

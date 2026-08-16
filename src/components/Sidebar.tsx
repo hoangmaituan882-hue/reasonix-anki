@@ -8,6 +8,7 @@ import {
 import {
   AnimatedBarChart3,
   AnimatedCalendarDays,
+  AnimatedClock,
   AnimatedGraduationCap,
   AnimatedLibrary,
   AnimatedMoon,
@@ -39,6 +40,7 @@ const NAV_ITEMS = [
   { id: "editor" as View, label: "笔记编辑", icon: AnimatedSquarePen },
   { id: "review" as View, label: "复习", icon: AnimatedGraduationCap },
   { id: "stats" as View, label: "统计概览", icon: AnimatedBarChart3 },
+  { id: "history" as View, label: "学习轨迹", icon: AnimatedClock },
   { id: "settings" as View, label: "系统设置", icon: AnimatedSettings },
 ];
 

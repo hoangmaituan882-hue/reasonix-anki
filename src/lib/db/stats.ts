@@ -22,6 +22,7 @@ async function db(): Promise<Database> {
           deck_id     INTEGER NOT NULL,
           ease        INTEGER,
           ivl         INTEGER,
+          previous_interval INTEGER,
           duration    INTEGER,
           type        INTEGER,
           PRIMARY KEY (review_time, card_id)
@@ -46,6 +47,14 @@ async function db(): Promise<Database> {
           last_ts INTEGER NOT NULL
         )
       `);
+      // 迁移：v1 库缺 previous_interval 列（CREATE TABLE IF NOT EXISTS 不会补列）——
+      // PRAGMA 检查后 ALTER TABLE 补上，幂等
+      const revlogCols = await d.select<{ name: string }[]>(
+        "PRAGMA table_info(revlog)",
+      );
+      if (!revlogCols.some((c) => c.name === "previous_interval")) {
+        await d.execute("ALTER TABLE revlog ADD COLUMN previous_interval INTEGER");
+      }
       return d;
     })();
   }
@@ -94,16 +103,29 @@ export async function syncDeck(
     const placeholders: string[] = [];
     const values: unknown[] = [];
     for (const r of chunk) {
-      const [ts, cardId, , ease, ivl, , , duration, type] = r;
-      placeholders.push("(?, ?, ?, ?, ?, ?, ?)");
-      values.push(ts, cardId, deckId, ease ?? 0, ivl ?? 0, duration ?? 0, type ?? 0);
+      // cardReviews 9 元组：[reviewTime, cardID, usn, buttonPressed, newInterval,
+      //                     previousInterval, newFactor, reviewDuration, reviewType]
+      const [ts, cardId, , ease, ivl, prevIvl, , duration, type] = r;
+      placeholders.push("(?, ?, ?, ?, ?, ?, ?, ?)");
+      values.push(
+        ts,
+        cardId,
+        deckId,
+        ease ?? 0,
+        ivl ?? 0,
+        prevIvl ?? null,
+        duration ?? 0,
+        type ?? 0,
+      );
       if (ts > maxTs) maxTs = ts;
       affectedDates.add(localDate(ts));
     }
     await d.execute(
       `INSERT OR IGNORE INTO revlog
-         (review_time, card_id, deck_id, ease, ivl, duration, type)
-       VALUES ${placeholders.join(", ")}`,
+         (review_time, card_id, deck_id, ease, ivl, previous_interval, duration, type)
+       VALUES ${placeholders.join(", ")}
+       ON CONFLICT(review_time, card_id) DO UPDATE SET
+         previous_interval = COALESCE(excluded.previous_interval, revlog.previous_interval)`,
       values,
     );
   }
@@ -203,4 +225,57 @@ export async function getDailyDetail(
     [date],
   );
   return rows[0] ?? null;
+}
+
+/** 时间线单条记录（SQLite snake_case → camelCase 映射后） */
+export interface TimelineRow {
+  reviewTime: number;
+  cardId: number;
+  deckId: number;
+  /** 评分按钮 1=Again 2=Hard 3=Good 4=Easy（0=手动/无） */
+  ease: number;
+  /** 新间隔（天；0=10 分钟内） */
+  ivl: number;
+  /** 前间隔（天；旧库数据为 null） */
+  previousIvl: number | null;
+  /** 复习耗时（秒） */
+  duration: number;
+  /** 复习类型 0=学习 1=复习 2=重学 */
+  type: number;
+}
+
+/** 读取指定日期的复习时间线（按 review_time 升序）；deckId 省略 = 全局跨牌组 */
+export async function getDayTimeline(
+  date: string,
+  deckId?: number,
+): Promise<TimelineRow[]> {
+  const d = await db();
+  const sql = `SELECT review_time, card_id, deck_id, ease, ivl, previous_interval, duration, type
+               FROM revlog
+               WHERE date(review_time / 1000, 'unixepoch', 'localtime') = ?
+               ${deckId != null ? "AND deck_id = ?" : ""}
+               ORDER BY review_time`;
+  const params: unknown[] = deckId != null ? [date, deckId] : [date];
+  const rows = await d.select<
+    {
+      review_time: number;
+      card_id: number;
+      deck_id: number;
+      ease: number;
+      ivl: number;
+      previous_interval: number | null;
+      duration: number;
+      type: number;
+    }[]
+  >(sql, params);
+  return rows.map((r) => ({
+    reviewTime: r.review_time,
+    cardId: r.card_id,
+    deckId: r.deck_id,
+    ease: r.ease,
+    ivl: r.ivl,
+    previousIvl: r.previous_interval,
+    duration: r.duration,
+    type: r.type,
+  }));
 }

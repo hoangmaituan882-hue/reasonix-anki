@@ -5,6 +5,14 @@
 
 ## 未发布（工作区）
 
+### 学习轨迹视图（复习时间线）——「检索这天复习的所有卡片」优化
+- **新视图「学习轨迹」**（侧边栏第 7 项，`features/history/`）：日期选择器（默认今天/前后一天/日期输入）→ 当日汇总卡（总次数/总耗时/学习·复习·重学构成/四档分布占比条）→ 垂直时间线（按 review_time 排序：时间戳、四档徽章 Again红·Hard橙·Good绿·Easy蓝、类型、耗时、**间隔变化箭头（前间隔→新间隔）**、牌组名），点击卡片摘要跳浏览定位（`cid:`）
+- **数据层**：SQLite `revlog` 加 `previous_interval` 列（幂等迁移：PRAGMA 检查 + ALTER TABLE；syncDeck 从 cardReviews 9 元组索引 5 补存，INSERT ON CONFLICT upsert 保留新值）；新增 `getDayTimeline(date, deckId?)`——**绝对日期查询**（`date(review_time/1000,'unixepoch','localtime')`），跨天零漂移（替代 `rated:` 相对语法）
+- **入口**：热力图右键菜单新增「查看当天学习轨迹」（`setHistoryDate` + 跳转，日期注入）；保留「检索这天复习的所有卡片」（浏览注入）与「复制检索语法」为二级操作
+- **双通道**：Tauri 走 SQLite；浏览器调试模式降级 `cardReviews(deck, 当天零点)` 遍历牌组按日过滤
+- **测试**：historyUtil 10 用例（四档映射/间隔格式化/汇总/日期偏移）；SQL 用 node:sqlite 验证（`scripts/verify-timeline-sql.mjs`：迁移/upsert/按日过滤/跨天隔离）；113→**123 全绿**；tsc 零错误
+- 真实浏览器验证（Tabbit）：侧边栏入口/日期选择/汇总卡/6 条时间线（含间隔箭头）/热力图右键跳转带日期注入/toast；零控制台错误
+
 ### 真实浏览器回归（Tabbit Browser）：CardRenderer 条件 hook 崩溃修复 + UI 冒烟脚本
 - **崩溃修复（真实浏览器实测发现）**：`CardRenderer` 组件的 `srcDoc` useMemo 位于 `result === null` 早退**之后**（条件 hook）——复习换卡瞬间 `setResult(null)` 触发 5→4 hooks，React 抛 "Rendered more hooks" 崩溃（vitest 无组件级测试所以漏网；ErrorBoundary 正确兜住显示错误屏）。修复：useMemo 移到早退之前（`result?.html ?? ""`，null 时计算丢弃）；`CardRenderer.test.tsx` 补组件级回归（换卡不崩）
 - **媒体回归验证**：QA 种子数据音频文件缺失（`retrieveMediaFile` 返回 false → CardRenderer 正确显示 🔇 占位，管线无 bug）→ 用 ffmpeg 生成静音 mp3 补入 QA 媒体目录 → 建测试卡（ceshi 牌组 + 问答题模板 + `[sound:]` 内联）复习实测：**`<audio controls>` src 为 `blob:` 且真实播放**（paused→false、currentTime 0→0.25s）——DOMPurify blob 保留修复端到端确认；KenJapaneseMining JS 模板的 `[sound:]` 由脚本运行时注入 iframe（processHtml 处理不到，安全模式脚本被拦属预期）已确认；测试数据已清理（deleteNotes + deleteDecks，findNotes 零残留）

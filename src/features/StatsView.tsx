@@ -7,6 +7,7 @@ import {
   Copy,
   Droplets,
   Flame,
+  History,
   Layers,
   RefreshCw,
   Search,
@@ -602,6 +603,7 @@ const HeatmapCell = memo(function HeatmapCellInner({
   scope,
   onSearchCards,
   onViewDetails,
+  onViewHistory,
 }: {
   count: number;
   target: number;
@@ -621,6 +623,7 @@ const HeatmapCell = memo(function HeatmapCellInner({
   scope: Scope;
   onSearchCards: (date: string) => void;
   onViewDetails: (date: string, count: number) => void;
+  onViewHistory: (date: string) => void;
 }) {
   // Hook 必须先于任何早退执行（Rules of Hooks）：isFuture 早退放在全部 hook 之后，
   // 否则同一实例 isFuture 翻转（跨午夜 + daily 更新）时 hook 数量变化会触发
@@ -805,6 +808,13 @@ const HeatmapCell = memo(function HeatmapCellInner({
         </ContextMenuLabel>
         <ContextMenuSeparator />
         <ContextMenuItem
+          onSelect={() => onViewHistory(date)}
+          className="cursor-pointer font-medium"
+        >
+          <History className="mr-2 h-4 w-4 text-[var(--rx-accent)]" />
+          查看当天学习轨迹
+        </ContextMenuItem>
+        <ContextMenuItem
           onSelect={() => onSearchCards(date)}
           className="cursor-pointer font-medium"
         >
@@ -861,6 +871,7 @@ function Heatmap({
   const updateSetting = useSettingsStore((s) => s.updateSetting);
   const setView = useAppStore((s) => s.setView);
   const setBrowseQuery = useAppStore((s) => s.setBrowseQuery);
+  const setHistoryDate = useAppStore((s) => s.setHistoryDate);
 
   const [detailDate, setDetailDate] = useState<{ date: string; count: number } | null>(null);
 
@@ -917,6 +928,16 @@ function Heatmap({
   const handleViewDetails = useCallback((date: string, count: number) => {
     setDetailDate({ date, count });
   }, []);
+
+  // 热力格右键「查看当天学习轨迹」：注入日期 → 切学习轨迹视图
+  const handleViewHistory = useCallback(
+    (date: string) => {
+      setHistoryDate(date);
+      setView("history");
+      toast({ title: "已打开学习轨迹", description: date });
+    },
+    [setHistoryDate, setView],
+  );
 
   const handleCellHover = useCallback(
     (cell: { date: string; count: number; dayOfWeek: string; fillPercent: number }) => {
@@ -1338,6 +1359,7 @@ function Heatmap({
                       scope={scope}
                       onSearchCards={handleSearchCards}
                       onViewDetails={handleViewDetails}
+                      onViewHistory={handleViewHistory}
                       onHover={handleCellHover}
                       onLeave={handleCellLeave}
                     />

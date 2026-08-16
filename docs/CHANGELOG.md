@@ -5,6 +5,15 @@
 
 ## 未发布（工作区）
 
+### 学习轨迹深化：会话分组 + 质量指标 + 失败高亮 + 卡片详情弹窗 + 实时刷新
+- **#1 复习会话分组**：`groupIntoSessions`（相邻记录 >20 分钟切分）——时间线按会话组织，会话标题显示「会话 N · 起止时间 · 次数 · 正确率」；同日多次打开 Anki 清晰分层
+- **#4 质量指标**：`summarizeDay` 扩展 correctRate（Good+Easy 占比）/ avgIvlGain（有前间隔记录的平均间隔涨幅）/ avgDuration——汇总卡新增「正确率（三档颜色）/ 平均间隔涨幅 ×N / 平均耗时」
+- **#6 失败高亮**：Again 或重学（type 2）记录左侧 `--rx-err` 红条 +「需重学」标签，薄弱点一眼识别
+- **#10 卡片详情弹窗**：`CardDetailDialog`——点时间线条目打开，标题为卡片正面摘要，内容为**当天该卡完整复习链**（时间升序：每次的评分徽章/间隔变化/耗时/类型），底部「在浏览中查看」（`cid:` 跳浏览）；`cardChain` 按 cardId 过滤，数据零额外请求（复用当天时间线）
+- **#12 实时刷新**：timelineQ 显式 `staleTime: 0`——评分/复习后回到学习轨迹自动重取最新记录（实测：评 Again 后正确率 100%→75% 自动更新）
+- **测试**：historyUtil 10→16 用例（质量指标/会话分组/表现链）；129 全绿；tsc 零错误
+- 真实浏览器验证（Tabbit）：会话分组渲染、失败高亮出现、正确率实时变化、详情弹窗表现链（3天→10天→27天）、零控制台错误
+
 ### 学习轨迹视图（复习时间线）——「检索这天复习的所有卡片」优化
 - **新视图「学习轨迹」**（侧边栏第 7 项，`features/history/`）：日期选择器（默认今天/前后一天/日期输入）→ 当日汇总卡（总次数/总耗时/学习·复习·重学构成/四档分布占比条）→ 垂直时间线（按 review_time 排序：时间戳、四档徽章 Again红·Hard橙·Good绿·Easy蓝、类型、耗时、**间隔变化箭头（前间隔→新间隔）**、牌组名），点击卡片摘要跳浏览定位（`cid:`）
 - **数据层**：SQLite `revlog` 加 `previous_interval` 列（幂等迁移：PRAGMA 检查 + ALTER TABLE；syncDeck 从 cardReviews 9 元组索引 5 补存，INSERT ON CONFLICT upsert 保留新值）；新增 `getDayTimeline(date, deckId?)`——**绝对日期查询**（`date(review_time/1000,'unixepoch','localtime')`），跨天零漂移（替代 `rated:` 相对语法）

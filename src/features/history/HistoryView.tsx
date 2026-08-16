@@ -12,7 +12,8 @@ import { getDayTimeline, type TimelineRow } from "../../lib/db/stats";
 import { inTauri } from "../../lib/anki/transport";
 import { useAppStore } from "../../stores/app";
 import { frontText } from "../browse/browseUtil";
-import { HistoryTimeline } from "./HistoryTimeline";
+import { HistoryTimeline, cardChain } from "./HistoryTimeline";
+import { CardDetailDialog } from "./CardDetailDialog";
 import {
   easeColor,
   shiftDate,
@@ -46,6 +47,8 @@ export function HistoryView() {
 
   const timelineQ = useQuery({
     queryKey: ["history", "timeline", date],
+    // staleTime 0：进入视图即重取（评分/复习后回到轨迹自动刷新最新记录）
+    staleTime: 0,
     queryFn: async (): Promise<TimelineEntry[]> => {
       // Tauri 模式：SQLite revlog（绝对日期，跨天零漂移）
       if (inTauri) {
@@ -99,7 +102,18 @@ export function HistoryView() {
 
   const summary = useMemo(() => summarizeDay(timelineQ.data ?? []), [timelineQ.data]);
 
+  // 卡片详情弹窗状态：点击卡片 → 打开当天表现链
+  const [detailCardId, setDetailCardId] = useState<number | null>(null);
+  const detailCard = detailCardId != null
+    ? (timelineQ.data ?? []).find((e) => e.cardId === detailCardId) ?? null
+    : null;
+  const detailChain = useMemo(
+    () => (detailCardId != null ? cardChain(timelineQ.data ?? [], detailCardId) : []),
+    [timelineQ.data, detailCardId],
+  );
+
   const jumpToCard = (cardId: number) => {
+    setDetailCardId(null);
     setBrowseQuery(`cid:${cardId}`);
     setView("browse");
   };
@@ -110,6 +124,10 @@ export function HistoryView() {
     const m = Math.floor(s / 60);
     return `${m} 分${s % 60 ? ` ${s % 60} 秒` : ""}`;
   };
+
+  const ratePct = summary.total > 0 ? Math.round(summary.correctRate * 100) : 0;
+  const rateTone =
+    ratePct >= 60 ? "var(--rx-ok)" : ratePct >= 40 ? "var(--rx-warn)" : "var(--rx-err)";
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
@@ -169,6 +187,24 @@ export function HistoryView() {
               学习 {summary.learn} · 复习 {summary.review} · 重学 {summary.relearn}
             </span>
           </div>
+          {/* 质量指标 */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-[var(--rx-fg-dim)]">
+            <span>
+              正确率{" "}
+              <b className="text-sm" style={{ color: rateTone }}>
+                {ratePct}%
+              </b>
+            </span>
+            {summary.avgIvlGain != null && (
+              <span>
+                平均间隔涨幅{" "}
+                <b className="text-sm text-[var(--rx-fg)]">
+                  ×{summary.avgIvlGain.toFixed(1)}
+                </b>
+              </span>
+            )}
+            <span>平均耗时 {fmtTime(summary.avgDuration * 1000)}</span>
+          </div>
           {/* 四档占比条 */}
           <div className="flex h-2 w-full overflow-hidden rounded-full bg-[var(--rx-border-soft)]">
             {BARS.map((b) => {
@@ -216,7 +252,20 @@ export function HistoryView() {
           </CardContent>
         </Card>
       ) : (
-        <HistoryTimeline entries={timelineQ.data!} onCardClick={jumpToCard} />
+        <HistoryTimeline
+          entries={timelineQ.data!}
+          onCardClick={(cardId) => setDetailCardId(cardId)}
+        />
+      )}
+
+      {/* 卡片详情弹窗（当天表现链） */}
+      {detailCard && detailChain.length > 0 && (
+        <CardDetailDialog
+          card={detailCard}
+          chain={detailChain}
+          onClose={() => setDetailCardId(null)}
+          onBrowse={jumpToCard}
+        />
       )}
     </div>
   );

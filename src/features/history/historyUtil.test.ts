@@ -3,12 +3,14 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  cardChain,
   easeColor,
   easeLabel,
   emptySummary,
   formatDuration,
   formatIvl,
   formatTime,
+  groupIntoSessions,
   shiftDate,
   summarizeDay,
   todayString,
@@ -99,6 +101,59 @@ describe("summarizeDay", () => {
 
   it("空列表 → 全零", () => {
     expect(summarizeDay([])).toEqual(emptySummary());
+  });
+
+  it("质量指标：正确率 / 平均间隔涨幅 / 平均耗时", () => {
+    const entries = [
+      entry({ ease: 1, duration: 4, previousIvl: 1, ivl: 2 }), // Again
+      entry({ ease: 3, duration: 8, previousIvl: 2, ivl: 6, cardId: 2 }), // Good
+      entry({ ease: 4, duration: 12, previousIvl: 6, ivl: 30, cardId: 3 }), // Easy
+    ];
+    const s = summarizeDay(entries);
+    expect(s.correctRate).toBeCloseTo(2 / 3, 5);
+    expect(s.avgIvlGain).toBeCloseTo((2 / 1 + 6 / 2 + 30 / 6) / 3, 5); // (2+3+5)/3
+    expect(s.avgDuration).toBeCloseTo(8, 5);
+  });
+
+  it("无 previousIvl 记录时不计算平均间隔涨幅", () => {
+    const s = summarizeDay([entry({ previousIvl: null })]);
+    expect(s.avgIvlGain).toBeNull();
+  });
+});
+
+describe("groupIntoSessions 会话分组", () => {
+  const base = Date.parse("2026-08-16T19:00:00+08:00");
+  const mk = (msOffset: number, cardId: number): TimelineEntry =>
+    entry({ reviewTime: base + msOffset, cardId });
+
+  it("相邻记录 ≤20 分钟归同一会话，超时切新会话", () => {
+    const entries = [mk(0, 1), mk(5 * 60 * 1000, 2), mk(30 * 60 * 1000, 3), mk(35 * 60 * 1000, 4)];
+    const sessions = groupIntoSessions(entries);
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0].entries).toHaveLength(2);
+    expect(sessions[0].endTime - sessions[0].startTime).toBe(5 * 60 * 1000);
+    expect(sessions[1].entries).toHaveLength(2);
+  });
+
+  it("空列表 → 空会话数组", () => {
+    expect(groupIntoSessions([])).toEqual([]);
+  });
+
+  it("单条 → 单会话", () => {
+    expect(groupIntoSessions([mk(0, 1)])).toHaveLength(1);
+  });
+});
+
+describe("cardChain 表现链", () => {
+  it("按 cardId 过滤当天记录（保序）", () => {
+    const entries = [
+      entry({ cardId: 1, ease: 1 }),
+      entry({ cardId: 2, ease: 3 }),
+      entry({ cardId: 1, ease: 3, reviewTime: Date.parse("2026-08-16T12:10:00+08:00") }),
+    ];
+    const chain = cardChain(entries, 1);
+    expect(chain).toHaveLength(2);
+    expect(chain.map((e) => e.ease)).toEqual([1, 3]);
   });
 });
 

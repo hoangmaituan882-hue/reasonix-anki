@@ -24,7 +24,7 @@ export interface TimelineEntry {
   deckName: string;
 }
 
-/** 当日汇总（四档分布 + 耗时 + 类型构成） */
+/** 当日汇总（四档分布 + 耗时 + 类型构成 + 质量指标） */
 export interface DaySummary {
   total: number;
   again: number;
@@ -35,6 +35,12 @@ export interface DaySummary {
   learn: number;
   review: number;
   relearn: number;
+  /** 正确率 Good+Easy 占比（0-1；无记录为 0） */
+  correctRate: number;
+  /** 平均间隔涨幅（有 previousIvl 的记录：新间隔/前间隔 的均值；无则为 null） */
+  avgIvlGain: number | null;
+  /** 平均耗时（秒） */
+  avgDuration: number;
 }
 
 /** 四档元数据（颜色令牌 + 标签 + lucide 图标名） */
@@ -96,12 +102,16 @@ export function emptySummary(): DaySummary {
     learn: 0,
     review: 0,
     relearn: 0,
+    correctRate: 0,
+    avgIvlGain: null,
+    avgDuration: 0,
   };
 }
 
-/** 汇总当天时间线（纯函数） */
+/** 汇总当天时间线（纯函数）：四档分布 + 质量指标 */
 export function summarizeDay(entries: TimelineEntry[]): DaySummary {
   const s = emptySummary();
+  let gains: number[] = [];
   for (const e of entries) {
     s.total++;
     if (e.ease === 1) s.again++;
@@ -112,8 +122,51 @@ export function summarizeDay(entries: TimelineEntry[]): DaySummary {
     if (e.type === 0) s.learn++;
     else if (e.type === 1) s.review++;
     else if (e.type === 2) s.relearn++;
+    if (e.previousIvl != null && e.previousIvl > 0 && e.ivl > 0) {
+      gains.push(e.ivl / e.previousIvl);
+    }
+  }
+  if (s.total > 0) {
+    s.correctRate = (s.good + s.easy) / s.total;
+    s.avgDuration = s.timeMs / 1000 / s.total;
+  }
+  if (gains.length > 0) {
+    s.avgIvlGain = gains.reduce((a, b) => a + b, 0) / gains.length;
   }
   return s;
+}
+
+/** 学习会话：相邻记录间隔 > gapMs 视为新会话（默认 20 分钟） */
+export interface StudySession {
+  startTime: number;
+  endTime: number;
+  entries: TimelineEntry[];
+}
+
+/** 按时间间隙切分会话（纯函数）；entries 需按 reviewTime 升序 */
+export function groupIntoSessions(
+  entries: TimelineEntry[],
+  gapMs = 20 * 60 * 1000,
+): StudySession[] {
+  const sessions: StudySession[] = [];
+  for (const e of entries) {
+    const last = sessions[sessions.length - 1];
+    if (last && e.reviewTime - last.endTime <= gapMs) {
+      last.entries.push(e);
+      last.endTime = Math.max(last.endTime, e.reviewTime);
+    } else {
+      sessions.push({ startTime: e.reviewTime, endTime: e.reviewTime, entries: [e] });
+    }
+  }
+  return sessions;
+}
+
+/** 某卡当天表现链（时间升序）；entries 需已含该卡记录 */
+export function cardChain(
+  entries: TimelineEntry[],
+  cardId: number,
+): TimelineEntry[] {
+  return entries.filter((e) => e.cardId === cardId);
 }
 
 /** 本地 YYYY-MM-DD（今日默认值） */

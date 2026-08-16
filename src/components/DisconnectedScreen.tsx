@@ -1,7 +1,8 @@
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Sparkles } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@reasonix/ui";
 import { useAnkiConnection } from "../lib/anki/useConnection";
 import { inTauri } from "../lib/anki/transport";
+import { setDemoMode } from "../lib/anki/demo";
 
 /** 断线引导屏（技术方案 §7：连接状态机 + 引导） */
 export function DisconnectedScreen() {
@@ -61,15 +62,33 @@ export function DisconnectedScreen() {
               桌面版请用 <code className="mono">npm run tauri dev</code>。
             </p>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void connection.refetch()}
-            className="rx-press"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            立即重试
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void connection.refetch()}
+              className="rx-press flex-1"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              立即重试
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                setDemoMode(true);
+                void connection.refetch();
+              }}
+              className="rx-press flex-1"
+              title="无需 Anki，用内置演示数据浏览全部界面"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              进入演示模式
+            </Button>
+          </div>
+          <p className="text-center text-[11px] text-[var(--rx-fg-faint)]">
+            演示模式：内置示例牌组/卡片/统计/时间线，仅用于浏览界面；恢复 Anki 后可在右上角状态点退出
+          </p>
         </CardContent>
       </Card>
     </div>

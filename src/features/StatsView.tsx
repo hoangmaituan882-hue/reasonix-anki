@@ -54,6 +54,7 @@ import {
   type DailyDetailRow,
 } from "../lib/db/stats";
 import { inTauri } from "../lib/anki/transport";
+import { isDemoMode } from "../lib/anki/demo";
 import { useSettingsStore } from "../stores/settings";
 import { useAppStore } from "../stores/app";
 import {
@@ -232,9 +233,9 @@ export function StatsView() {
           <Heatmap daily={daily} scope={scope} />
         )}
 
-        {scope !== "global" && !inTauri && (
+        {scope !== "global" && (!inTauri || isDemoMode()) && (
           <p className="mt-2 text-xs text-[var(--rx-fg-faint)]">
-            浏览器调试模式下无本地 SQLite，单牌组统计需在 Tauri 桌面模式查看。
+            浏览器调试/演示模式下无本地 SQLite，单牌组统计需在 Tauri 桌面模式查看；演示模式请切换到「全局（所有牌组）」
           </p>
         )}
       </div>

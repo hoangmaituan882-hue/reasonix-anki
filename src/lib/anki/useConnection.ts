@@ -1,9 +1,11 @@
 /**
  * 连接状态机（技术方案 §4.3 连接指示器）
  * version + requestPermission 组合探测，3s 轮询；双通道通用。
+ * 演示模式（无 Anki）：跳过真实轮询，直接视为已连接（数据来自 mock）。
  */
 import { useQuery } from "@tanstack/react-query";
 import { anki } from "./actions";
+import { isDemoMode } from "./demo";
 
 export interface AnkiStatus {
   version: number;
@@ -15,6 +17,7 @@ export type ConnectionState = "checking" | "connected" | "disconnected";
 export function useAnkiConnection() {
   const query = useQuery({
     queryKey: ["anki", "status"],
+    enabled: !isDemoMode(),
     queryFn: async (): Promise<AnkiStatus> => {
       const [version, permission] = await Promise.all([
         anki.version(),
@@ -26,16 +29,19 @@ export function useAnkiConnection() {
     retry: false,
   });
 
-  const status: ConnectionState = query.isPending
-    ? "checking"
-    : query.isError
-      ? "disconnected"
-      : "connected";
+  const demo = isDemoMode();
+  const status: ConnectionState = demo
+    ? "connected"
+    : query.isPending
+      ? "checking"
+      : query.isError
+        ? "disconnected"
+        : "connected";
 
   return {
     status,
-    version: query.data?.version,
-    error: query.error instanceof Error ? query.error.message : undefined,
+    version: demo ? 6 : query.data?.version,
+    error: demo ? undefined : query.error instanceof Error ? query.error.message : undefined,
     refetch: query.refetch,
   };
 }
@@ -49,6 +55,7 @@ export function useAnkiConnection() {
 export function useAnkiStatus(): ConnectionState {
   const query = useQuery({
     queryKey: ["anki", "status"],
+    enabled: !isDemoMode(),
     queryFn: async (): Promise<AnkiStatus> => {
       const [version, permission] = await Promise.all([
         anki.version(),
@@ -59,5 +66,6 @@ export function useAnkiStatus(): ConnectionState {
     refetchInterval: 3000,
     retry: false,
   });
+  if (isDemoMode()) return "connected";
   return query.isPending ? "checking" : query.isError ? "disconnected" : "connected";
 }

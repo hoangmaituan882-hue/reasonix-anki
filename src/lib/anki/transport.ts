@@ -5,6 +5,7 @@
  * 两条通道返回同构 result，上层无感。
  */
 import { invoke } from "@tauri-apps/api/core";
+import { demoCall, isDemoMode } from "./demo";
 
 export const inTauri =
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -18,6 +19,11 @@ export async function ankiCall<T = unknown>(
   action: string,
   params: unknown = {},
 ): Promise<T> {
+  // 演示模式（无 Anki 环境浏览 UI）：全部 action 走内置 mock 数据
+  if (isDemoMode()) {
+    return demoCall<T>(action, params as Record<string, unknown>);
+  }
+
   if (inTauri) {
     return (await invoke("anki_request", { action, params })) as T;
   }

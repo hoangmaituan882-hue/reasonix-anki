@@ -5,6 +5,15 @@
 
 ## 未发布（工作区）
 
+### 内置演示模式（无需 Anki 浏览完整 UI）
+- **新增 `lib/anki/demo.ts`**：演示模式开关（localStorage `ra.demoMode` 持久化，刷新保持）+ 全 action mock 数据表——3 个演示牌组（日语入门/N5 词汇/系统默认）、6 张日语演示卡（人間/先生/学校/本/時間/友達，含 question/answer/fields）、额度统计、近 26 周热力图数据（今天固定 12）、cardReviews 时间线（仅演示牌组返回，避免降级路径遍历牌组重复）、写操作成功形状
+- **transport.ankiCall 拦截**：演示模式所有 action 走 mock（视图层无感）；`useConnection` 演示模式跳过轮询直接 connected
+- **入口与退出**：断线屏新增「进入演示模式」按钮（Sparkles 图标 + 说明）；`ConnectionIndicator` 显示「演示模式 · 点击退出」徽章（点击恢复真实连接）
+- **适配**：HistoryView 演示模式走 mock 时间线（不读 SQLite）；StatsView 单牌组演示/浏览器提示
+- **用途**：AI Studio 等云端环境 / Anki 未启动时浏览全部界面（今日/浏览/统计/学习轨迹/复习会话均可）；`docs/AI_STUDIO.md` 增补演示模式章节
+- **测试**：demo.test 8 用例（开关/牌组统计/cardsInfo/byDay/cardReviews 边界/写操作/未支持 action 抛错）；137→**145 全绿**；tsc 零错误
+- 真实浏览器验证（Tabbit，demo 持久化 + reload）：今日 3 演示牌组、浏览 6 卡、统计 12+热力图、学习轨迹 6 条、复习会话 0/6 队列；零控制台错误
+
 ### 修复 buildInfo 缺失导致干净 clone 无法启动 + 浏览器模式体验优化
 - **修复（AI Studio 环境实测发现）**：`src/lib/buildInfo.ts` 被 .gitignore 排除（release 防污染设计），但它是构建必需文件——任何干净 clone（Google AI Studio / CI / 协作者）缺文件 → `AboutCard` 静态 import 编译失败、应用打不开。修复：AboutCard 改用 Vite `import.meta.glob` 动态发现 + 开发版 fallback（缺失回退 v0.1.0-dev / dev / "开发版（未运行 build:info）"）；验证：临时移走 buildInfo.ts 后 `npm run build` 仍通过，本地 build:info 生成后仍显示真实版本
 - **浏览器模式体验**：`transport.ts` 浏览器 fetch /anki 失败文案区分原因（"请确认 Anki 已启动；浏览器调试模式还需开发服务器 localhost:1420 正在运行"，不再误报"无法连接 AnkiConnect（127.0.0.1:8765）"）；`DisconnectedScreen` 新增浏览器模式提示条（Anki + dev server 需同时运行）

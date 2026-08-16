@@ -12,6 +12,7 @@ import { anki } from "../../lib/anki/actions";
 import { useDeckTree } from "../../lib/anki/query";
 import { getDayTimeline, type TimelineRow } from "../../lib/db/stats";
 import { inTauri } from "../../lib/anki/transport";
+import { isDemoMode } from "../../lib/anki/demo";
 import { useAppStore } from "../../stores/app";
 import { frontText } from "../browse/browseUtil";
 import { HistoryTimeline, cardChain } from "./HistoryTimeline";
@@ -87,7 +88,7 @@ export function HistoryView() {
 
   /** 拉取单日时间线（Tauri SQLite / 浏览器 cardReviews 双通道） */
   const fetchDay = async (day: string): Promise<TimelineEntry[]> => {
-    if (inTauri) {
+    if (inTauri && !isDemoMode()) {
       return await enrich(await getDayTimeline(day));
     }
     const dayStart = Date.parse(`${day}T00:00:00`);

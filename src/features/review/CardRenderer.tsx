@@ -208,17 +208,11 @@ export function CardRenderer({
     };
   }, [result?.html, onContextMenu]);
 
-  if (result === null) {
-    return (
-      <div className="space-y-3 p-6">
-        <Skeleton className="h-6 w-2/3" />
-        <Skeleton className="h-6 w-1/2" />
-        <Skeleton className="h-24 w-full" />
-      </div>
-    );
-  }
-
   // iframe 与主页面样式隔离：手动带入主题前景/背景与字体
+  // 注意：以下计算与 srcDoc useMemo 必须位于 result===null 早退之前（Rules of
+  // Hooks）——换卡瞬间 setResult(null) 会触发一次 result=null 渲染，若 useMemo
+  // 在早退之后则 hook 数量从 5 变 4，React 抛 "Rendered more hooks" 崩溃。
+  // result=null 时 srcDoc 计算一次被丢弃，无副作用。
   const rootStyle = getComputedStyle(document.documentElement);
   const fg = rootStyle.getPropertyValue("--rx-fg").trim() || "#f1f1ef";
   const bg = rootStyle.getPropertyValue("--rx-bg").trim() || "#0c0d10";
@@ -246,9 +240,19 @@ export function CardRenderer({
   ${css}
 </style>
 </head>
-<body class="card ${dark ? "nightMode" : ""}">${result.html}${keyForward}</body>
+<body class="card ${dark ? "nightMode" : ""}">${result?.html ?? ""}${keyForward}</body>
 </html>`;
-  }, [result.html, css, bg, fg, font, dark, keyForward]);
+  }, [result?.html, css, bg, fg, font, dark, keyForward]);
+
+  if (result === null) {
+    return (
+      <div className="space-y-3 p-6">
+        <Skeleton className="h-6 w-2/3" />
+        <Skeleton className="h-6 w-1/2" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col">

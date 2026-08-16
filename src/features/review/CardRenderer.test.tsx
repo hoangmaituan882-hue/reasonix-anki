@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { processHtml } from "./CardRenderer";
+import { render, screen, waitFor } from "@testing-library/react";
+import { CardRenderer, processHtml } from "./CardRenderer";
 
 const resolveMediaUrlMock = vi.hoisted(() => vi.fn());
 const peekMediaUrlMock = vi.hoisted(() => vi.fn());
@@ -81,5 +82,36 @@ describe("CardRenderer processHtml LRU 缓存", () => {
     expect(out).toContain('src="blob:pic.jpg"');
     expect(out).not.toContain("onerror");
     expect(out).not.toContain("srcdoc");
+  });
+});
+
+describe("CardRenderer 组件（Rules of Hooks 回归）", () => {
+  beforeEach(() => {
+    resolveMediaUrlMock.mockReset();
+    resolveMediaUrlMock.mockImplementation(async (name: string) => `blob:${name}`);
+    peekMediaUrlMock.mockReset();
+    peekMediaUrlMock.mockImplementation((name: string) => `blob:${name}`);
+  });
+
+  it("换卡（html 变化 → setResult(null) 路径）不触发 Rendered more hooks 崩溃", async () => {
+    // 真实浏览器实测抓到的崩溃：useMemo 在 result===null 早退之后（条件 hook），
+    // 换卡瞬间 5→4 hooks → React "Rendered more hooks"。
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const { rerender } = render(<CardRenderer html="<div>卡片A</div>" />);
+      // 首次渲染完成（iframe 出现 = processHtml 已 resolve）
+      await waitFor(() => expect(screen.getByTitle("卡片内容")).toBeInTheDocument());
+
+      // 换卡：effect 重跑 setResult(null) → 若 useMemo 条件调用则此处崩溃
+      rerender(<CardRenderer html="<div>卡片B</div>" />);
+      await waitFor(() => expect(screen.getByTitle("卡片内容")).toBeInTheDocument());
+
+      const hookError = errSpy.mock.calls.some((c) =>
+        String(c[0]).includes("Rendered more hooks"),
+      );
+      expect(hookError).toBe(false);
+    } finally {
+      errSpy.mockRestore();
+    }
   });
 });

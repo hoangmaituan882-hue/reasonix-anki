@@ -5,6 +5,12 @@
 
 ## 未发布（工作区）
 
+### 真实浏览器回归（Tabbit Browser）：CardRenderer 条件 hook 崩溃修复 + UI 冒烟脚本
+- **崩溃修复（真实浏览器实测发现）**：`CardRenderer` 组件的 `srcDoc` useMemo 位于 `result === null` 早退**之后**（条件 hook）——复习换卡瞬间 `setResult(null)` 触发 5→4 hooks，React 抛 "Rendered more hooks" 崩溃（vitest 无组件级测试所以漏网；ErrorBoundary 正确兜住显示错误屏）。修复：useMemo 移到早退之前（`result?.html ?? ""`，null 时计算丢弃）；`CardRenderer.test.tsx` 补组件级回归（换卡不崩）
+- **媒体回归验证**：QA 种子数据音频文件缺失（`retrieveMediaFile` 返回 false → CardRenderer 正确显示 🔇 占位，管线无 bug）→ 用 ffmpeg 生成静音 mp3 补入 QA 媒体目录 → 建测试卡（ceshi 牌组 + 问答题模板 + `[sound:]` 内联）复习实测：**`<audio controls>` src 为 `blob:` 且真实播放**（paused→false、currentTime 0→0.25s）——DOMPurify blob 保留修复端到端确认；KenJapaneseMining JS 模板的 `[sound:]` 由脚本运行时注入 iframe（processHtml 处理不到，安全模式脚本被拦属预期）已确认；测试数据已清理（deleteNotes + deleteDecks，findNotes 零残留）
+- **UI 冒烟脚本**：新增 `scripts/tabbit-smoke.ps1`（ASCII-only 兼容 Windows PowerShell 5.1 免 BOM）+ `scripts/tabbit-smoke.js`——真实 Chromium 冒烟：连接状态（checking 态不误判）→ 今日学习 → 牌组浏览 → 统计概览（热力图格数），全程收集 pageerror/console.error 输出 JSON；dev server 未启动时自动拉起；踩坑记录：Vite 监听 IPv6 `::1` vs AnkiConnect IPv4（端口探测用 HTTP）、沙箱裸 socket 不支持 IPv6 地址族、checking 态断线屏文案提前出现、5.1 无 BOM UTF-8 中文解析/管道编码
+- 验证：前端 112→**113 全绿**（+1 组件回归）；tsc 零错误；冒烟三视图断言通过、零控制台错误
+
 ### 稳定性与性能批次（含 review 审查修复）
 - **App 根渲染性能**：新增 `useAnkiStatus()` 粗粒度连接 hook（利用 React Query v5 prop-tracking，3s 轮询 status 不变不触发整树重渲染）；`main.tsx` Query 全局 `staleTime: 30s`（切视图不重拉牌组数据；StatsView 的 stats.today/byDay 显式 `staleTime: 0` 保持挂载即重取）
 - **断线屏自治**：`DisconnectedScreen` 自取连接状态（error/refetch 内部化），App 不再传 props；测试改 mock hook

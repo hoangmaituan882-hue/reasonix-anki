@@ -5,10 +5,11 @@
  */
 import { useMemo } from "react";
 import { motion } from "motion/react";
-import { Check, ChevronsDown, ChevronsUp, X } from "lucide-react";
+import { Check, ChevronsDown, ChevronsUp, Layers, X } from "lucide-react";
 import { cn } from "@reasonix/ui";
 import {
   cardChain,
+  collapseAdjacentSameCard,
   easeColor,
   easeLabel,
   formatDuration,
@@ -118,6 +119,71 @@ function Entry({
   );
 }
 
+/** 折叠组条目：同卡连续复习合并为一行，点击打开详情弹窗（表现链） */
+function CollapsedEntry({
+  group,
+  index,
+  onCardClick,
+}: {
+  group: { cardId: number; entries: TimelineEntry[] };
+  index: number;
+  onCardClick?: (cardId: number) => void;
+}) {
+  const first = group.entries[0];
+  const last = group.entries[group.entries.length - 1];
+  const firstColor = easeColor(first.ease);
+  const lastColor = easeColor(last.ease);
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: Math.min(index * 0.04, 0.6), duration: 0.25 }}
+      className="relative flex gap-3 pl-6"
+    >
+      <div className="absolute left-1.5 top-0 bottom-0 w-px bg-[var(--rx-border-soft)]" />
+      <div
+        className="absolute left-0 top-3.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2"
+        style={{ borderColor: firstColor, background: "var(--rx-bg)" }}
+      >
+        <div className="h-1.5 w-1.5 rounded-full" style={{ background: firstColor }} />
+      </div>
+      <button
+        type="button"
+        onClick={() => onCardClick?.(group.cardId)}
+        className="mb-1.5 flex flex-1 items-center gap-2 rounded-r-[var(--rx-r-s)] border border-l-2 border-l-[var(--rx-accent)] border-[var(--rx-border-soft)] bg-[var(--rx-bg-soft)] px-3 py-2 text-left transition-colors hover:border-[var(--rx-fg-faint)]"
+        title="查看该卡当天复习链"
+      >
+        <Layers className="h-3.5 w-3.5 shrink-0 text-[var(--rx-accent)]" />
+        <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--rx-fg)]">
+          {first.front}
+        </span>
+        <span className="shrink-0 rounded-full bg-[var(--rx-border-soft)] px-1.5 py-px text-[11px] font-bold text-[var(--rx-fg)]">
+          ×{group.entries.length}
+        </span>
+        <span
+          className="shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold"
+          style={{
+            color: firstColor,
+            background: `color-mix(in srgb, ${firstColor} 14%, transparent)`,
+          }}
+        >
+          {easeLabel(first.ease)}
+        </span>
+        <span className="shrink-0 text-[10px] text-[var(--rx-fg-dim)]">→</span>
+        <span
+          className="shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold"
+          style={{
+            color: lastColor,
+            background: `color-mix(in srgb, ${lastColor} 14%, transparent)`,
+          }}
+        >
+          {easeLabel(last.ease)}
+        </span>
+      </button>
+    </motion.div>
+  );
+}
+
 export function HistoryTimeline({ entries, onCardClick }: Props) {
   const sessions = useMemo(() => groupIntoSessions(entries), [entries]);
 
@@ -126,6 +192,8 @@ export function HistoryTimeline({ entries, onCardClick }: Props) {
       {sessions.map((s, si) => {
         const sum = summarizeDay(s.entries);
         const rate = sum.total > 0 ? Math.round(sum.correctRate * 100) : 0;
+        // 轻量纯函数直接调用（不能在 map 内用 hook）
+        const items = collapseAdjacentSameCard(s.entries);
         return (
           <section key={s.startTime}>
             {/* 会话标题 */}
@@ -140,9 +208,23 @@ export function HistoryTimeline({ entries, onCardClick }: Props) {
               </span>
               <div className="h-px flex-1 bg-[var(--rx-border-soft)]" />
             </div>
-            {s.entries.map((e, i) => (
-              <Entry key={`${e.reviewTime}-${e.cardId}`} entry={e} index={i} onCardClick={onCardClick} />
-            ))}
+            {items.map((item, i) =>
+              item.kind === "group" ? (
+                <CollapsedEntry
+                  key={`g-${item.cardId}-${item.entries[0].reviewTime}`}
+                  group={item}
+                  index={i}
+                  onCardClick={onCardClick}
+                />
+              ) : (
+                <Entry
+                  key={`${item.entry.reviewTime}-${item.entry.cardId}`}
+                  entry={item.entry}
+                  index={i}
+                  onCardClick={onCardClick}
+                />
+              ),
+            )}
           </section>
         );
       })}

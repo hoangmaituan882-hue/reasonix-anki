@@ -3,10 +3,14 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  aggregateRange,
   cardChain,
+  collapseAdjacentSameCard,
+  compareDays,
   easeColor,
   easeLabel,
   emptySummary,
+  filterEntries,
   formatDuration,
   formatIvl,
   formatTime,
@@ -154,6 +158,82 @@ describe("cardChain 表现链", () => {
     const chain = cardChain(entries, 1);
     expect(chain).toHaveLength(2);
     expect(chain.map((e) => e.ease)).toEqual([1, 3]);
+  });
+});
+
+describe("filterEntries 筛选", () => {
+  const entries = [
+    entry({ ease: 1, type: 0, deckId: 1 }),
+    entry({ ease: 3, type: 1, deckId: 1, cardId: 2 }),
+    entry({ ease: 4, type: 1, deckId: 2, cardId: 3 }),
+  ];
+
+  it("无筛选返回原数组", () => {
+    expect(filterEntries(entries, {})).toBe(entries);
+  });
+
+  it("按评分/类型/牌组组合过滤", () => {
+    expect(filterEntries(entries, { ease: 3 })).toHaveLength(1);
+    expect(filterEntries(entries, { type: 1, deckId: 2 })).toHaveLength(1);
+    expect(filterEntries(entries, { ease: 1, deckId: 2 })).toHaveLength(0);
+  });
+});
+
+describe("collapseAdjacentSameCard 同卡折叠", () => {
+  const base = Date.parse("2026-08-16T19:00:00+08:00");
+  const mk = (cardId: number, minute: number): TimelineEntry =>
+    entry({ cardId, reviewTime: base + minute * 60000 });
+
+  it("连续同卡合并为一组，中间插入其他卡则拆开", () => {
+    const items = collapseAdjacentSameCard([mk(1, 0), mk(1, 1), mk(2, 2), mk(1, 3)]);
+    expect(items).toHaveLength(3);
+    expect(items[0]).toEqual({ kind: "group", cardId: 1, entries: [mk(1, 0), mk(1, 1)] });
+    expect(items[1]).toEqual({ kind: "single", entry: mk(2, 2) });
+    // 中间被其他卡隔断后，最后一张同卡重新开始（单条保持 single）
+    expect(items[2]).toEqual({ kind: "single", entry: mk(1, 3) });
+  });
+
+  it("全部独立卡 → 全部 single", () => {
+    const items = collapseAdjacentSameCard([mk(1, 0), mk(2, 1)]);
+    expect(items.every((i) => i.kind === "single")).toBe(true);
+  });
+
+  it("空数组 → 空", () => {
+    expect(collapseAdjacentSameCard([])).toEqual([]);
+  });
+});
+
+describe("compareDays 跨日对比", () => {
+  it("次数/正确率/耗时差", () => {
+    const today = summarizeDay([
+      entry({ ease: 3 }),
+      entry({ ease: 4, cardId: 2 }),
+      entry({ ease: 1, cardId: 3 }),
+    ]); // 3 次，correctRate 2/3
+    const yesterday = summarizeDay([entry({ ease: 3 })]); // 1 次，100%
+    const c = compareDays(today, yesterday);
+    expect(c.countDelta).toBe(2);
+    expect(c.rateDelta).toBe(Math.round((2 / 3 - 1) * 100)); // -33
+    expect(c.timeDeltaMs).toBe(8 * 1000 * 2);
+  });
+
+  it("参照日无记录 → rateDelta null", () => {
+    const c = compareDays(summarizeDay([entry({})]), emptySummary());
+    expect(c.rateDelta).toBeNull();
+  });
+});
+
+describe("aggregateRange 范围聚合", () => {
+  it("只保留有记录的日期，汇总正确", () => {
+    const byDate = new Map<string, TimelineEntry[]>();
+    byDate.set("2026-08-16", [entry({ ease: 3 }), entry({ ease: 1, cardId: 2 })]);
+    byDate.set("2026-08-15", []);
+    byDate.set("2026-08-14", [entry({ ease: 4, cardId: 3 })]);
+    const aggs = aggregateRange(byDate, ["2026-08-16", "2026-08-15", "2026-08-14"]);
+    expect(aggs).toHaveLength(2);
+    expect(aggs[0].date).toBe("2026-08-16");
+    expect(aggs[0].summary.total).toBe(2);
+    expect(aggs[1].summary.total).toBe(1);
   });
 });
 

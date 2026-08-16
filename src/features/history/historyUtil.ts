@@ -169,6 +169,89 @@ export function cardChain(
   return entries.filter((e) => e.cardId === cardId);
 }
 
+/** 时间线筛选条件（全部省略 = 不过滤） */
+export interface TimelineFilters {
+  ease?: number;
+  type?: number;
+  deckId?: number;
+}
+
+/** 筛选时间线（纯函数）；返回过滤后的副本 */
+export function filterEntries(
+  entries: TimelineEntry[],
+  filters: TimelineFilters,
+): TimelineEntry[] {
+  const { ease, type, deckId } = filters;
+  if (ease == null && type == null && deckId == null) return entries;
+  return entries.filter(
+    (e) =>
+      (ease == null || e.ease === ease) &&
+      (type == null || e.type === type) &&
+      (deckId == null || e.deckId === deckId),
+  );
+}
+
+/** 相邻同卡折叠单元：单条 or 同卡连续记录组（kind 判别联合） */
+export type TimelineItem =
+  | { kind: "single"; entry: TimelineEntry }
+  | { kind: "group"; cardId: number; entries: TimelineEntry[] };
+
+/** 同卡相邻记录折叠（纯函数）：连续同 cardId 的记录合并为一组；
+ *  entries 需按 reviewTime 升序。折叠组 entries 保序。 */
+export function collapseAdjacentSameCard(entries: TimelineEntry[]): TimelineItem[] {
+  const items: TimelineItem[] = [];
+  for (const e of entries) {
+    const last = items[items.length - 1];
+    if (last?.kind === "single" && last.entry.cardId === e.cardId) {
+      items[items.length - 1] = { kind: "group", cardId: e.cardId, entries: [last.entry, e] };
+    } else if (last?.kind === "group" && last.cardId === e.cardId) {
+      last.entries.push(e);
+    } else {
+      items.push({ kind: "single", entry: e });
+    }
+  }
+  return items;
+}
+
+/** 两组摘要对比（今天 vs 参照日；纯函数） */
+export interface DayComparison {
+  countDelta: number;
+  rateDelta: number | null; // 百分比点差（参照日无记录为 null）
+  timeDeltaMs: number;
+}
+
+export function compareDays(
+  today: DaySummary,
+  ref: DaySummary,
+): DayComparison {
+  const countDelta = today.total - ref.total;
+  const timeDeltaMs = today.timeMs - ref.timeMs;
+  const rateDelta =
+    ref.total > 0 && today.total > 0
+      ? Math.round((today.correctRate - ref.correctRate) * 100)
+      : null;
+  return { countDelta, rateDelta, timeDeltaMs };
+}
+
+/** 日期范围聚合：每日汇总 */
+export interface DailyAgg {
+  date: string;
+  summary: DaySummary;
+}
+
+/** 汇总日期范围内的每日记录（纯函数；dates 升序，allByDate 为各日 entries 映射） */
+export function aggregateRange(
+  byDate: Map<string, TimelineEntry[]>,
+  dates: string[],
+): DailyAgg[] {
+  return dates
+    .map((date) => ({
+      date,
+      summary: summarizeDay(byDate.get(date) ?? []),
+    }))
+    .filter((d) => d.summary.total > 0);
+}
+
 /** 本地 YYYY-MM-DD（今日默认值） */
 export function todayString(): string {
   const d = new Date();

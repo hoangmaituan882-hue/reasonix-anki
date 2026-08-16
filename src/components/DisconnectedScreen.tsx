@@ -1,6 +1,7 @@
 import { RefreshCw } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@reasonix/ui";
 import { useAnkiConnection } from "../lib/anki/useConnection";
+import { inTauri } from "../lib/anki/transport";
 
 /** 断线引导屏（技术方案 §7：连接状态机 + 引导） */
 export function DisconnectedScreen() {
@@ -54,6 +55,12 @@ export function DisconnectedScreen() {
           {connection.error ? (
             <p className="text-xs text-[var(--rx-fg-faint)]">最近错误：{connection.error}</p>
           ) : null}
+          {!inTauri && (
+            <p className="rounded-md bg-[var(--rx-warn)]/10 px-2 py-1.5 text-xs text-[var(--rx-warn)]">
+              当前为浏览器调试模式：需 Anki 与开发服务器（localhost:1420）同时运行；
+              桌面版请用 <code className="mono">npm run tauri dev</code>。
+            </p>
+          )}
           <Button
             variant="outline"
             size="sm"

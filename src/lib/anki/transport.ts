@@ -30,7 +30,11 @@ export async function ankiCall<T = unknown>(
       body: JSON.stringify({ action, version: 6, params }),
     });
   } catch {
-    throw new Error("无法连接 AnkiConnect（127.0.0.1:8765）");
+    // 浏览器调试模式：fetch /anki 走 Vite proxy——dev server 停止时也会在此失败，
+    // 文案区分两种可能原因，避免误报"AnkiConnect 不可达"
+    throw new Error(
+      "无法连接 AnkiConnect——请确认 Anki 已启动；浏览器调试模式还需开发服务器（localhost:1420）正在运行",
+    );
   }
   if (!res.ok) {
     throw new Error(`无法连接 AnkiConnect（HTTP ${res.status}）`);

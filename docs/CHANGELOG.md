@@ -5,6 +5,12 @@
 
 ## 未发布（工作区）
 
+### 修复 buildInfo 缺失导致干净 clone 无法启动 + 浏览器模式体验优化
+- **修复（AI Studio 环境实测发现）**：`src/lib/buildInfo.ts` 被 .gitignore 排除（release 防污染设计），但它是构建必需文件——任何干净 clone（Google AI Studio / CI / 协作者）缺文件 → `AboutCard` 静态 import 编译失败、应用打不开。修复：AboutCard 改用 Vite `import.meta.glob` 动态发现 + 开发版 fallback（缺失回退 v0.1.0-dev / dev / "开发版（未运行 build:info）"）；验证：临时移走 buildInfo.ts 后 `npm run build` 仍通过，本地 build:info 生成后仍显示真实版本
+- **浏览器模式体验**：`transport.ts` 浏览器 fetch /anki 失败文案区分原因（"请确认 Anki 已启动；浏览器调试模式还需开发服务器 localhost:1420 正在运行"，不再误报"无法连接 AnkiConnect（127.0.0.1:8765）"）；`DisconnectedScreen` 新增浏览器模式提示条（Anki + dev server 需同时运行）
+- **文档**：新增 `docs/AI_STUDIO.md`——Google AI Studio 导入步骤（GitHub 连接）、云端能力边界（Tauri/Anki 不可运行、vitest/build 可用）、推荐工作流（云端 AI 开发 + 本地 tauri dev 验证）、注意事项
+- 验证：137 全绿；tsc 零错误；vite build（含缺失场景）通过
+
 ### 学习轨迹增强：筛选 + 同卡折叠 + 跨日对比 + 日期范围聚合
 - **#11 筛选**：评分（全部/Again/Hard/Good/Easy）+ 类型（全部/学习/复习/重学）+ 牌组下拉三组筛选；作用于汇总卡与时间线（`filterEntries` 纯函数）
 - **#3 同卡折叠**：`collapseAdjacentSameCard`（kind 判别联合）——会话内连续同卡记录折叠为一行（Layers 图标 + `×N` + 评分范围 首→末），点击打开详情弹窗（表现链）

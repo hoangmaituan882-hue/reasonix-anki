@@ -23,6 +23,7 @@ import {
 import { AchievementCard } from "./AchievementCard";
 import { AchievementUnlockModal } from "./AchievementUnlockModal";
 import { PixelUnlockToast } from "./PixelUnlockToast";
+import { NumberTicker } from "../NumberTicker";
 
 const CATEGORIES_META: { id: AchievementCategory; label: string; icon: any }[] = [
   { id: "all", label: "全部勋章", icon: Award },
@@ -216,8 +217,11 @@ export function AchievementWall({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
             <div className="bg-[var(--rx-bg-soft)] border border-[var(--rx-border-soft)] rounded-xl p-2 text-center">
               <span className="text-[12px] text-[var(--rx-fg-dim)] block">解封进度</span>
-              <div className="text-[16px] font-bold text-amber-500 font-mono mt-0.5">
-                {unlockedCount} / {totalCount} ({completionPercentage}%)
+              <div className="text-[16px] font-bold text-amber-500 font-mono mt-0.5 inline-flex items-center gap-1 justify-center">
+                <NumberTicker value={unlockedCount} />
+                <span>/</span>
+                <span>{totalCount}</span>
+                <span className="text-[13px] text-amber-500/80">({completionPercentage}%)</span>
               </div>
             </div>
 
@@ -225,7 +229,7 @@ export function AchievementWall({
               <span className="text-[12px] text-[var(--rx-fg-dim)] block">已领宝石</span>
               <div className="text-[16px] font-bold text-amber-500 font-mono flex items-center justify-center gap-1 mt-0.5">
                 <Gem className="h-3.5 w-3.5" />
-                <span>{totalGems.toLocaleString()}</span>
+                <NumberTicker value={totalGems} locale />
               </div>
             </div>
 
@@ -233,7 +237,7 @@ export function AchievementWall({
               <span className="text-[12px] text-[var(--rx-fg-dim)] block">累积 XP</span>
               <div className="text-[16px] font-bold text-purple-400 font-mono flex items-center justify-center gap-1 mt-0.5">
                 <Zap className="h-3.5 w-3.5" />
-                <span>{totalXp.toLocaleString()}</span>
+                <NumberTicker value={totalXp} locale />
               </div>
             </div>
 

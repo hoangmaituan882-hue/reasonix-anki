@@ -5,3 +5,20 @@ import "@testing-library/jest-dom/vitest";
 if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
+
+// jsdom 未实现 IntersectionObserver（Framer Motion useInView 依赖它）
+if (typeof window !== "undefined" && !("IntersectionObserver" in window)) {
+  class MockIntersectionObserver {
+    readonly root = null;
+    readonly rootMargin = "";
+    readonly thresholds: number[] = [];
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver = MockIntersectionObserver;
+  (global as unknown as { IntersectionObserver: unknown }).IntersectionObserver = MockIntersectionObserver;
+}

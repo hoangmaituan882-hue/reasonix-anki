@@ -14,6 +14,7 @@ import {
   AnimatedVolume2,
 } from "../../components/icons/animated";
 import { Alert, AlertDescription, Badge, Button } from "@reasonix/ui";
+import { NumberTicker } from "../../components/NumberTicker";
 import type { JapaneseWordRecord } from "../vocabulary/lapisAdapter";
 import { MappingWizard } from "../vocabulary/MappingWizard";
 import type { SessionRevealResponse } from "../../lib/reasonix-addon/schemas";
@@ -344,14 +345,20 @@ export function StudyReportSummary({
       </header>
       <div className="grid grid-cols-2 border-b border-[var(--rx-border-soft)] sm:grid-cols-4">
         {[
-          ["完成", String(report?.answeredCards ?? answeredCards)],
-          ["总耗时", formatDuration(report?.durationMs)],
-          ["平均", formatDuration(report?.averageMs)],
-          ["明日到期", report?.tomorrowDue == null ? "--" : String(report.tomorrowDue)],
-        ].map(([label, value]) => (
-          <div key={label} className="min-w-0 px-4 py-4 text-center">
-            <div className="text-lg font-semibold tabular-nums">{value}</div>
-            <div className="mt-1 text-2xs text-[var(--rx-fg-faint)]">{label}</div>
+          ["完成", report?.answeredCards ?? answeredCards, true],
+          ["总耗时", formatDuration(report?.durationMs), false],
+          ["平均", formatDuration(report?.averageMs), false],
+          ["明日到期", report?.tomorrowDue, true],
+        ].map(([label, value, isNumeric]) => (
+          <div key={label as string} className="min-w-0 px-4 py-4 text-center">
+            <div className="text-lg font-semibold tabular-nums">
+              {isNumeric && typeof value === "number" ? (
+                <NumberTicker value={value} />
+              ) : (
+                (value as string) ?? "--"
+              )}
+            </div>
+            <div className="mt-1 text-2xs text-[var(--rx-fg-faint)]">{label as string}</div>
           </div>
         ))}
       </div>
@@ -362,12 +369,17 @@ export function StudyReportSummary({
             四档分布
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {["忘记", "困难", "良好", "简单"].map((label, index) => (
-              <div key={label} className="rounded-[var(--rx-r-m)] bg-[var(--rx-bg-soft)] px-2 py-3 text-center">
-                <div className="font-semibold tabular-nums">{ratings[String(index + 1) as "1" | "2" | "3" | "4"]}</div>
-                <div className="mt-1 text-2xs text-[var(--rx-fg-faint)]">{label}</div>
-              </div>
-            ))}
+            {["忘记", "困难", "良好", "简单"].map((label, index) => {
+              const count = ratings[String(index + 1) as "1" | "2" | "3" | "4"] ?? 0;
+              return (
+                <div key={label} className="rounded-[var(--rx-r-m)] bg-[var(--rx-bg-soft)] px-2 py-3 text-center">
+                  <div className="font-semibold tabular-nums">
+                    <NumberTicker value={count} />
+                  </div>
+                  <div className="mt-1 text-2xs text-[var(--rx-fg-faint)]">{label}</div>
+                </div>
+              );
+            })}
           </div>
           <div className="mt-3 text-xs text-[var(--rx-fg-faint)]">
             忘记率 {report?.forgottenRate === undefined ? "--" : `${Math.round(report.forgottenRate * 100)}%`}

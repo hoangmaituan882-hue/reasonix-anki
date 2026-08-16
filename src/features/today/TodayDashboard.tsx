@@ -23,6 +23,8 @@ import {
 } from "../../components/icons/animated";
 import { dueCount, summarizeTodayDecks, type TodayDeckRow } from "./todayUtil";
 
+import { NumberTicker } from "../../components/NumberTicker";
+
 export interface TodayDashboardProps {
   decks: TodayDeckRow[];
   selectedDeckId: number | null;
@@ -45,6 +47,8 @@ function OverviewMetricCard({
 }) {
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(0);
+  const numericValue = typeof value === "number" ? value : Number(value);
+  const isNumeric = Number.isFinite(numericValue);
 
   return (
     <Card
@@ -56,7 +60,13 @@ function OverviewMetricCard({
       <CardContent className="flex items-center justify-between p-4">
         <div>
           <div className="text-2xs text-[var(--rx-fg-faint)]">{label}</div>
-          <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
+          <div className="mt-1 text-xl font-semibold tabular-nums">
+            {isNumeric ? (
+              <NumberTicker value={numericValue} />
+            ) : (
+              value
+            )}
+          </div>
         </div>
         <span className="flex h-9 w-9 items-center justify-center rounded-[var(--rx-r-m)] rx-accent-soft transition-transform group-hover:scale-105">
           <Icon size={16} isHovered={hovered} trigger={clicked} className="text-[var(--rx-accent)]" />

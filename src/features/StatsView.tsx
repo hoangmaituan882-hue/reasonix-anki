@@ -37,6 +37,7 @@ import {
   TableRow,
   cn,
 } from "@reasonix/ui";
+import { NumberTicker } from "../components/NumberTicker";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast, toastError } from "../components/ToasterLite";
@@ -281,6 +282,9 @@ function SummaryCard({
   value: number | string;
   accent?: boolean;
 }) {
+  const numericValue = typeof value === "number" ? value : Number(value);
+  const isNumeric = Number.isFinite(numericValue);
+
   return (
     <div className="rounded-[var(--rx-r-m)] border border-[var(--rx-border-soft)] bg-[var(--rx-bg-elev)] p-3">
       <div className="flex items-center gap-1.5 text-2xs text-[var(--rx-fg-faint)]">
@@ -288,10 +292,14 @@ function SummaryCard({
         {label}
       </div>
       <div
-        className="mt-1 text-2xl font-semibold"
+        className="mt-1 text-2xl font-semibold tabular-nums"
         style={accent ? { color: "var(--rx-accent)" } : undefined}
       >
-        {value}
+        {isNumeric ? (
+          <NumberTicker value={numericValue} />
+        ) : (
+          value
+        )}
       </div>
     </div>
   );

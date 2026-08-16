@@ -5,6 +5,12 @@
 
 ## 未发布（工作区）
 
+### NumberTicker 数字滚动动画接入
+- **组件**：新增 `components/NumberTicker.tsx`（源自 beui.dev/motion/number：逐位数字滚动 + 入场错峰 + locale 千分位 + pad 补零 + 无障碍 sr-only）+ 3 测试；`lib/utils.ts` re-export `cn`
+- **接入 5 处**：StatsView 汇总卡、TodayDashboard 今日指标卡、StudyView 学习报告（完成/明日到期/四档分布）、AchievementWall 成就墙（进度/宝石/XP）——数值改用滚动动画，非数值保留原样
+- **测试基建**：`test/setup.ts` 补 IntersectionObserver mock（motion useInView 依赖）
+- 验证：tsc 零错误；29 文件 / 108 测试全绿；vite build 成功
+
 ### 液态注水热力图效果补齐（rx-liquid CSS 移植）
 - **根因**：上一轮接入 v1 热力图时只移植了 `rx-wave-*` 动画类（为设置页预览），漏掉完整液态注水 CSS——HeatmapCell 组件已用 `rx-liquid-cell`/`rx-liquid-body` 类但无对应样式，流体注水效果失效
 - **修复**：`src/index.css` 补齐 `rx-liquid-breathe`/`rx-water-full-pulse`/`rx-liquid-cell`（含 hover 放大 + 波速加速）/`rx-liquid-full-active`（满水脉冲）
